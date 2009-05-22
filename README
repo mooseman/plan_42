@@ -1,0 +1,22 @@
+
+*****  README  ***** 
+
+Have you been looking for a public domain operating system? 
+The perfect public domain OS? One which treats everything as a file? 
+
+Well, your search will have to go on for a bit longer. In the 
+meantime though, you can play with Plan 42.....  ;)    
+
+The Plan 42 code is released to the public domain.  
+
+              ********************************* 
+
+Plan 42 uses Teagit as the basis of its toy "file system".  
+It also implements a simple toy shell which tries to be 
+similar to the public domain "es" shell.    
+
+( Notes to self - things to start with - plumb, cat, 
+namespaces, ......  The plumber and namespaces will 
+be very high priority.  Also do kernel services.  )  
+
+
