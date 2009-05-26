@@ -10,36 +10,27 @@
 
 import time 
 
-#  A logon class 
+#  A logon class.  This will be improved using 
+#  getpass.py and hashlib soon.  
 class logon(): 
-  def __init__(self, os, username, pw): 
-      self.os = os 
+  def __init__(self, username, pw):       
       self.username = username 
       self.pw = pw 
 	 
-      os = os.lower().translate(None, ' ')  
-	  
-      if os == "plan42": 
-	     # Do some stuff to imitate setup during boot 
-         print "Welcome to Plan 42! Share and enjoy.... " 
-         time.sleep(3) 
-         print "Mounting drives... please wait..." 
-         time.sleep(3) 
-         print "Mounted /  /dev  /usr  /etc  "  
-         time.sleep(3) 
-         print "Done!"  
+	  # Do some stuff to imitate setup during boot 
+      print "Welcome to Plan 42! Share and enjoy.... " 
+      time.sleep(3) 
+      print "Mounting drives... please wait..." 
+      time.sleep(3) 
+      print "Mounted /  /dev  /usr  /etc  "  
+      time.sleep(3) 
+      print "Done!"  
 	 
-      elif "win" in os: 
-          print "Oh, come on now, be serious - use a REAL OS!" 
-          time.sleep(3) 
-          print "Loaded BSOD()  :)  " 	
-          time.sleep(3) 		  	
-
-		 
+      		
 #  Run the class 
-a = logon("win", "fred", "foobar") 
+a = logon("fred", "foobar") 
 
-b = logon("Plan 42", "trev", "asdf56") 
+
 
 
 
