@@ -7,16 +7,7 @@
 
 #  This code is released to the publ;ic domain.  
 
-#  This code requires Teagit.  
-
-
-#  Teagit will be the toy "file system".  
-
-#  Note - to open a file in vi and go to a given 
-#  line, do this - vi +5 myfile.txt - goes to line 5. 
-
-# from teagit import * 
-
+import time 
 
 #  A logon class 
 class logon(): 
@@ -27,9 +18,19 @@ class logon():
 	 
       os = os.lower()
 	 
+	  # Do some stuff to imitate setup during boot 
+      print "Welcome to Plan 42! Share and enjoy.... " 
+      time.sleep(3) 
+      print "Mounting drives... please wait..." 
+      time.sleep(3) 
+      print "Mounted /  /dev  /usr  /etc  "  
+      time.sleep(3) 
+	 
       if "win" in os: 
-	      print "Oh, come on now, be serious - use a REAL OS!" 
-		
+          print "Oh, come on now, be serious - use a REAL OS!" 
+          time.sleep(2) 
+          print "Loaded BSOD()  :)  " 		
+
 		 
 #  Run the class 
 a = logon("win", "fred", "foobar") 
