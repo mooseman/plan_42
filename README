@@ -11,12 +11,6 @@ The Plan 42 code is released to the public domain.
 
               ********************************* 
 
-Plan 42 uses Teagit as the basis of its toy "file system".  
-It also implements a simple toy shell which tries to be 
-similar to the public domain "es" shell.    
-
-( Notes to self - things to start with - plumb, cat, 
-namespaces, ......  The plumber and namespaces will 
-be very high priority.  Also do kernel services.  )  
-
+In the future, Plan 42 may use Teagit as the basis of its toy "file system".  
+For now, however, it's all about having fun.....
 
