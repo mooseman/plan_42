@@ -5,7 +5,8 @@
 #  Well, your search will have to go on for a bit longer. In the 
 #  meantime though, you can play with Plan 42.....  ;)    
 
-#  This code is released to the publ;ic domain.  
+#  This code is released to the public domain.  
+
 
 import time 
 
