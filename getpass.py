@@ -111,3 +111,9 @@ else:
     getpass = unix_getpass
 
 
+#  Run the code to ask for a password 
+if __name__ == '__main__': 
+   unix_getpass()  
+   
+   
+
