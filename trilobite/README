@@ -1,0 +1,18 @@
+
+ ***  README ***  
+Trilobite will be a public-domain implementation of Plan 9's 
+Fossil file-system.  
+
+Initially, this is likely to be done in Python, so it will be very much a 
+"toy implementation" to start with.  However, a C++ version is 
+planned.  This is likely to first be an "embedded" 
+filesystem, in a similar manner to "whefs" which is an existing 
+public-domain embedded filesystem.  
+
+See the following link for more info on whefs - 
+http://fossil.wanderinghorse.net/repos/whefs/index.cgi/wiki/whefs 
+
+  
+
+
+

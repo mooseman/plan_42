@@ -4,34 +4,39 @@
 #  A simple "toy plumber" class.  
 #  This code is released to the public domain. 
 
+#  NOTE! - This code uses an OrderedDict, and so 
+#  you must use Python 3.1 or later to run it. 
+
 #  Note - to open a file in vi and go to a given 
 #  line, do this - vi +5 myfile.txt - goes to line 5. 
 
-#  Need the following functions - 
-#  read_plumb_file, 
+#  TO DO - Add code to look at the various plumbing rules 
+#  and act on them.  
 
-import os, fileinput  
+
+import os, fileinput, collections, itertools    
 
 class plumber(): 
-   @staticmethod 
-   def open(): 
-      os.system('vi +5 foo.txt') 
+   def init(self):  
+      self.mydict = collections.OrderedDict() 
 	  
+   def open(self, file):
+      self.file = open(file, 'r').readlines()
+      for k, v in enumerate(self.file): 
+	      self.mydict[k] = v.rstrip('\n') 
+		  
+   def display(self): 
+      print(self.mydict) 
+	  	  
 
 #  Run the class 
-# myplumb = plumber()
+myplumb = plumber() 
 
-# myplumb.open() 
+myplumb.init() 
 
+myplumb.open('plumbertest1') 
 
-f = open('plumbertest1', 'rb')
+myplumb.display() 
 
-for line in f: 
-   print line.splitlines() 
-   
-
-	  
-   
-   
    
 

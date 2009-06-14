@@ -1,0 +1,27 @@
+
+   ***  A few notes on a real Plan 42 OS *** 
+Implementation language - C++ 
+Use "whefs" (Wandering Horse embedded file system) as the file system to start with. 
+Look at having "modes".  A compatibility layer allowing easy emulation of a given OS, e.g. 
+Linux, the BSDs, Plan 9.  Plan 9 will be the default.  
+
+Make the whole OS use a Plan 9 approach to things - device drivers, namespaces, 
+init, shell.... etc.  
+
+Classes to start with - kernel,  mem,  users, proc(ess), mode,  dev(ice),  fs, shell.  
+authorisation, messages.  Look at using a "signals and slots" approach where possible.  Tie that 
+in with using 9p.  
+
+The shell.  Can use "es" (the P.D. clone of Plan 9's "rc" shell) or could do a new one from 
+scratch.  Communication between shell and kernel.  
+
+Communication between devices and kernel - interrupts etc.   
+
+Authorisation.  Plan 9 uses ACLs (access control lists), so Plan 42 will also use those.  
+Easy to understand.  
+
+
+
+
+
+

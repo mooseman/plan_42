@@ -11,18 +11,22 @@ import time
      
 	 
 class file():  
+   def init(self): 
+      self.dict = {} 
+
    def create(self, fname, owner): 
       self.fname = name 
-	  self.owner = owner 
-	  self.type = '' 
-	  self.permissions = ''  
-	  	  
-	  
+      self.owner = owner 
+      self.type = '' 
+      self.permissions = ''  
+      self.dict.update({self.fname :  [self.owner, self.type, self.permissions]} ) 
+	  	  	  
    def mod(self, fname, attrib, newval): 
-      if xxxx	  	 
+      if self.dict.has_key(self.fname): 
+	      self.fname.attrib = newval  
 	 
 	 
-	 
+	 	 
 class os():  
    def __init__(self, username, pw):
       self.username = username
