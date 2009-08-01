@@ -8,14 +8,13 @@
 #  This code is released to the public domain.  
 
 import time 
-     
-	 
+     	 
 class file():  
    def init(self): 
       self.dict = {} 
 
    def create(self, fname, owner): 
-      self.fname = name 
+      self.fname = fname 
       self.owner = owner 
       self.type = '' 
       self.permissions = ''  
@@ -24,9 +23,21 @@ class file():
    def mod(self, fname, attrib, newval): 
       if self.dict.has_key(self.fname): 
 	      self.fname.attrib = newval  
+          
+   def display(self): 
+      print self.dict           
+          
 	 
-	 
-	 	 
+#  Test the class 
+a = file()
+a.init()
+a.create("foo.txt", "Fred Bloggs")
+a.create("moose.jpg", "Fred Bloggs") 
+a.create("bar.txt", "Mary Bloggs") 
+a.display()      
+     
+     
+	 	 	 
 class os():  
    def __init__(self, username, pw):
       self.username = username
@@ -52,7 +63,7 @@ class os():
    def cp(self, source, target): 
       '''self.source = source 
 	  self.target = target '''
-	   
+	        
    def ls(self, dir): 
       pass 
       ''' print [fname for fname in dir]  	   	   	    ''' 
