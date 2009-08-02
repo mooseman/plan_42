@@ -28,7 +28,7 @@ vector <int> cmdName;
 
 for (int i=0; i<28; i++) 
 {     
-    cmdName[i] = i + 100; 
+    cmdName.push_back(i+100); 
     cout << cmdName[i] << "\n" ; 
 } 
 
