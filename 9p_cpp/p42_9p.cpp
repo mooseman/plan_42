@@ -11,6 +11,9 @@
 //  This code is released to the public domain. 
 //  "Share and enjoy......"   ;)  
 
+//  N!TE! - This code uses some C++0x features, so you will need 
+//  to run g++ with the "-std=c++0x" compile option.    
+
 
 #include <vector> 
 #include <map> 
