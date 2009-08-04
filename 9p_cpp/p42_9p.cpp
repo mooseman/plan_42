@@ -13,6 +13,7 @@
 
 
 #include <vector> 
+#include <map> 
 #include <string> 
 #include <iostream> 
 
@@ -21,16 +22,41 @@ using namespace std ;
 //  Main 
 int main() 
 { 
-//  Define the command enum.   
-//  First, we create the numeric array for the codes (this is the 
-//  cmdName array in Tom's code).  
-vector <int> cmdName;  
+    
+//  Define two maps. One maps from the code to the text command, and 
+//  the other does the reverse.  
+typedef map <int, string>  num_to_name;  
+typedef map <string, int>  name_to_num; 
+        
+//  Define the numbers and commands.   
+//  First, we create the numeric vector for the codes (this is the 
+//  cmdName array in Tom's code). We also create a string vector 
+//  for the commands. 
+ 
+vector <int> nums;  
 
-for (int i=0; i<28; i++) 
+// The vector for the commands  
+vector <string> cmds { "version", "auth" , "attach", "error",  
+    "flush", "walk", "open", "create", "read", "write", "clunk",  
+    "remove", "stat", "wstat" };  
+    
+//  A vector to hold all of the "T" and "R" commands     
+vector <string> trcmds ;          
+                   
+for (int i=0; i<14; i++) 
+{  
+   trcmds.push_back("T" + cmds[i] ) ; 
+   trcmds.push_back("R" + cmds[i] ) ;   
+   cout << trcmds[i] << "\n" ;           
+}                
+          
+          
+for (int j=0; j<28; j++) 
 {     
-    cmdName.push_back(i+100); 
-    cout << cmdName[i] << "\n" ; 
+   nums.push_back(j+100);     
+   cout << nums[j] << "\n" ;      
 } 
+
 
 return 0 ; 
 
