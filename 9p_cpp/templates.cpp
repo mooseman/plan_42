@@ -1,18 +1,7 @@
 
 
-//  p42_9p.cpp 
-//  A port of Tom Newsham's excellent Python 9p 
-//  implementation to C++ 
-
-//  Acknowledgements - This code would not have been 
-//  possible without Tom Newsham's implementation being 
-//  available.  Many thanks, Tom!  
-
-//  This code is released to the public domain. 
-//  "Share and enjoy......"   ;)  
-
-//  NOTE! - This code uses some C++0x features, so you will need 
-//  to run g++ with the "-std=c++0x" compile option.    
+//  templates.cpp  
+//  Becoming more familiar with the STL.  
 
 
 #include <vector> 
@@ -25,15 +14,49 @@
 using namespace std ; 
 
 
-//  A function to pad strings 
-std::string pad(std::string str, int l, char padch='\0') 
-{
-   int i;  
-   for (i=0; i<=l; i++) 
+//  A template for a list of functions and args 
+template <typename... funcs> class myfuncs ; 
+template <typename... args> class myargs ; 
  
-   str += padch * (l - str.length() ) ; 
-   return str.substr(0, l); 
-} 
+ 
+void andysfunction(string *args) 
+{  
+    cout << *args << "\n" ;     
+}  
+     
+ 
+void andy_func(int val) 
+{ 
+    cout << val << "\n" ;       
+}      
+ 
+ 
+string printstr(string a, string b) 
+{
+  
+   cout << a << " " << b << "\n" ;
+   return "foo" ;    
+    
+}       
+ 
+
+string concat(string a, string b) 
+{
+  
+   return a + b ; 
+    
+}       
+ 
+ 
+ 
+ 
+ 
+//  Create an instance of the myfuncs class. 
+
+
+//  std::vector<(andysfuncs *)> functions ; 
+
+//  class myclass<float sqrt(), float square(), std::vector<float> >; 
 
 
 
@@ -75,26 +98,14 @@ for (int j=0; j<28; j++)
    cout << nums[j] << "\n" ;      
 } 
 
-//  Define some constants 
-string version = "9P2000" ; 
+//  Call andy_func 
+andy_func(235); 
 
-int notag = 0xffff ; 
-int nofid = 0xffffffff; 
-int DIR = 020000000000 ;
-int QDIR = 0x80 ; 
-int OREAD = 0; 
-int OWRITE = 1; 
-int ORDWR = 2; 
-int OEXEC = 3; 
-int OTRUNC = 0x10; 
-int ORCLOSE = 0x40; 
-int PORT = 564; 
+//  Call the printstr function 
+printstr("foo", "bar"); 
 
-//  This is just here to stop warnings about 
-//  unused variables. 
-cout << notag << nofid << DIR << QDIR 
-  << OREAD << OWRITE << ORDWR << OEXEC 
-  << OTRUNC << ORCLOSE << PORT << "\n" ; 
+//  Call the concat function 
+concat("foo", "bar"); 
 
 
 return 0 ; 
