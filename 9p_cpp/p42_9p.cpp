@@ -19,6 +19,7 @@
 #include <map> 
 #include <string> 
 #include <iostream> 
+#include <iomanip> 
 #include <valarray> 
 #include <cmath> 
 
@@ -30,10 +31,30 @@ std::string pad(std::string str, int l, char padch='\0')
 {
    int i;  
    for (i=0; i<=l; i++) 
- 
-   str += padch * (l - str.length() ) ; 
+      str += padch * (l - str.length() ) ; 
    return str.substr(0, l); 
 } 
+
+
+//  This Python function prints a space-separated hex version 
+//  of a string. 
+//  def XXXdump(buf) :
+//	   print " ".join(["%02x" % ord(ch) for ch in buf]) 
+
+//  Note - look at using a vector here as the argument, instead of 
+//  a string.  Alternatively, the string can be passed as the argument
+//  and then put in the vector. Need to apply the "ord" function to 
+//  all elements in the vector. Then we convert them to their hex value.
+void hexdump(std::string buf) 
+{ 
+   vector<int> v;  
+   
+   for (int i=0; i<v.size(); i++)  
+//    std::cout << std::setfill(" ") << setbase(16) << *my_iter << endl ;  
+      std::cout << v[i] << endl ;  
+    
+}     
+
 
 
 
