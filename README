@@ -7,10 +7,12 @@ The perfect public domain OS? One which treats everything as a file?
 Well, your search will have to go on for a bit longer. In the 
 meantime though, you can play with Plan 42.....  ;)    
 
+No, this is *not* meant to be a real OS, but a very small toy simulation of one. 
+
 The Plan 42 code is released to the public domain.  
 
               ********************************* 
 
-In the future, Plan 42 may use Teagit as the basis of its toy "file system".  
-For now, however, it's all about having fun.....
+In the future, Plan 42 may use Teagit or memventi as the basis of its toy "file system".  
+For now, however, it's all about having fun..... 
 
