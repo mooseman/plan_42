@@ -1,18 +1,16 @@
 
-*****  README  ***** 
+ *****  README  ***** 
 
-Have you been looking for a public domain operating system? 
-The perfect public domain OS? One which treats everything as a file? 
+ A start is about to be made on Plan 42 - a small public-domain 
+operating system.
 
-Well, your search will have to go on for a bit longer. In the 
-meantime though, you can play with Plan 42.....  ;)    
+ The first priority is to get a small, simple kernel to boot.  Some P.D. code 
+is available to help with this.  After this is done, considerable time will be 
+spent becoming familiar with the code and how it works.  
 
-No, this is *not* meant to be a real OS, but a very small toy simulation of one. 
+The aim is to first get a very good understanding of the basics of booting, 
+kernels and operating systems.  At that point, it should be possible to 
+start customising the kernel to become more "Plan 9-like".  
 
-The Plan 42 code is released to the public domain.  
 
-              ********************************* 
-
-In the future, Plan 42 may use Teagit or memventi as the basis of its toy "file system".  
-For now, however, it's all about having fun..... 
 
