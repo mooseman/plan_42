@@ -1,0 +1,73 @@
+read.me for tasktes1.zip  Hardware multi-tasking example
+Version 1.0, Mar 25, 1998
+Sample code
+by John S. Fine  johnfine@erols.com
+I do not place any restrictions on your use of this source code
+I do not provide any warranty of the correctness of this source code
+____________________________________________________________________________
+
+To run:
+
+vload tasktest.bin
+
+It runs 200 simultaneous tasks.  Each task has a different combination
+of the scheduling parameters "defer" and "quantum".  Each task just
+updates a counter on the screen, so you can see how fast they are
+running.
+
+Every task has a private TSS with a private CR3 value (a private page
+directory) and one private page table and one private page (for its
+stack).  All tasks share the same code (as well as GDT, IDT etc.)
+
+It uses only a single TSS descriptor in the GDT.  It modifies the
+TSS descriptor in the GDT to always point to the current task.
+
+To rebuild (If you don't have gcc, you can skip that step):
+You need JLOC version 0.6 or later.
+
+gcc -c -O3 counter.c
+gcc -c -O3 showcoun.c
+NASM -f OBJ tasktest.asm
+NASM -f OBJ tasks_h.asm
+NASM -f OBJ idt2.asm
+NASM -f OBJ set_vec.asm
+NASM -f OBJ dump.asm
+NASM -f OBJ 8259.asm
+NASM -f OBJ mempool.asm
+NASM -f OBJ meminit.asm
+NASM -f OBJ pri_heap.asm
+JLOC tasktest.lnk tasktest.bin tasktest.map
+____________________________________________________________________________
+
+This example includes a very flexible scheduler.  It is based on the real-
+time event scheduler in my 8254 examples.  Some of the documentation there
+might help to understand its inner working.  This version is a normal
+scheduler and not a real-time event scheduler.
+
+The explanation of the scheduler parameters (as well as the code for
+creating and time-slicing tasks) is in TASKS_H.ASM.
+
+The code for maintaining the priority heap of active tasks is in
+PRI_HEAP.ASM.
+____________________________________________________________________________
+
+This example include a manager for three pools of free 4K pages.  The
+kernel of a paged OS should manage pools of 4K pages.  This is a good
+example of how to do that using no significant memory overhead outside of
+the free pages themselves.  This code is in MEMPOOL.ASM
+
+In this example, the initial set of free pages is identified and "freed"
+by MEMINIT.ASM.  That module also moves the entire kernel and all its
+paging and other data to new pages allocated from the last pool.  This
+step might be required in an OS that needs low memory for DMA buffers
+or similar purposes.
+____________________________________________________________________________
+
+Another interesting feature is the use of the "EMPTY" section.  In
+TASKTEST.LNK the EMPTY section is forced to be 4Kb aligned and beyond the
+end of the stack.  In MEMINIT.ASM, any memory allocated to that section is
+returned to the free pool.  In TASKS_H.ASM, memory is requested for
+portions of that section as required by the kernel.  This demonstrates a
+common feature in mapped kernels.  You can allocate a large amount of
+address space for potentially large structures, and you can wait to
+allocate RAM to that address space until you actually need it.
