@@ -1,0 +1,23 @@
+IDT
+
+0   Reserved
+1
+2
+3
+.
+.
+.
+1E
+1F  Reserved
+
+20  IRQ 0
+21  IRQ 1
+.
+.
+.
+2F  IRQ F
+
+30  Free
+.
+.
+.

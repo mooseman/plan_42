@@ -1,0 +1,35 @@
+TaskList(TL)
+
+TL_Ent_Size	equ	4
+TL_Base		equ	lin_TL * pages
+TL_Size		equ	size_TL * pages
+
+
+First entry:
+	[    Count   ]00[Current     ]00
+	Count	Index to the last Entry, 0 = no entries
+	Current	Index to the current entry
+	
+	
+Entry	[   Reserved   ][TSSSelector]000
+
+	
+TaskSwitch(internal):
+	1. current running TSS selector is written to the current position in the TL
+	2. TL current position is moved to the next entry(Wrap around if needed)
+	3. a new TSS selector is read from the current TL position and started
+	
+	
+	
+Services:
+	.add
+		in:	dx = TSS Selector
+	.remove
+		in:	dx = TSS Selector
+
+;Start and stop is not used yet
+;Currently a TSS in the TL is running
+	.start
+		in:	dx = TSS Selector
+	.stop
+		in:	dx = TSS Selector
