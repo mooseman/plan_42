@@ -1,0 +1,17 @@
+
+ ***  Readme -   Nanos  ***  
+
+ Nanos is a small multitasking microkernel operating system 
+originally written by Peter Hultqvist.  
+
+ It is planned that Nanos will be used as the base of the Plan 42 
+operating system.  
+
+  *** Acknowledgement and Thanks ***  
+ Peter has very kindly and generously agreed that I may take over the 
+development of Nanos.  He has also very kindly agreed that the Nanos 
+code may be released as "public domain".  
+
+ Very many thanks for your kindness and generosity, Peter!  
+
+

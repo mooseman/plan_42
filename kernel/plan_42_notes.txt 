@@ -1,0 +1,37 @@
+
+  ***  Notes on design of plan 42 ***  
+
+ *  Bootloader -  Use the one from Nanos.  Possibly simplify it.  
+May use some code from the "PC assembly" tutorial too.  
+There's also mbload (P.D. and done in C).  If that were simplified and 
+brought up-to-date, it could be very useful in a Grub-like boot manager.  
+
+*  Kernel -  Mostly from Nanos.  Some code from "PC assembly" tutorial.  
+Also look at ideas from XomB "bare bones".   
+
+*  Memory manager  -  To be decided 
+
+*  Virtual filesystem - To be decided.  "PC assembly" tutorial code is very good.  
+
+ *** Overall approach ***  
+
+ Modular.  Simplicity, elegance and modularity are the key aims. 
+ Speed is secondary.  
+
+ Might even look at doing a useful mini-Grub-like boot-manager first. This could 
+be a useful intro and warmup to things.  For example -  (let's call the boot-manager 
+"pdboot )   )  -   
+
+*  pdboot bootloader starts and loads "second stage" pdboot -  
+*  Second-stage pdboot brings up menu with selection options.  After that, the plan 42 
+kernel could start.  
+
+*  Security.  Think about how to handle this.  Will definitely use permissions as in *nix, 
+Plan 9.  Might use other things as well.     
+
+ 
+ 
+
+
+
+

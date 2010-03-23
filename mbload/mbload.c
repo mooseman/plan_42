@@ -15,20 +15,15 @@ extern unsigned long g_linear, g_phys;
 #include <string.h> /* strncpy(), memcmp(), memset() */
 #include <setjmp.h> /* jmp_buf, setjmp(), longjmp() */
 #include <stdio.h> /* printf(), sprintf() */
-#include <conio.h> /* getch() */
+
 #include <fcntl.h> /* O_RDONLY, O_BINARY */
 #include <ctype.h> /* tolower() */
-#include <bios.h> /* struct diskinfo_t, _bios_disk() */
-/* MK_FP(), FP_SEG(), FP_OFF(), struct REGPACK, intr(), outportb() */
-#include <dos.h> /* _dos_getdrive() */
-#include <io.h> /* SEEK_..., open(), lseek(), tell(), read(), close() */
 
-/* Actually, I can't get it to work with Watcom C... */
-#if defined(__WATCOMC__)
-#if defined(__386__)
-#error This is a 16-bit program. Compile with WCC.EXE
-#endif
-#include <conio.h> /* outp() */
+/* MK_FP(), FP_SEG(), FP_OFF(), struct REGPACK, intr(), outportb() */
+#include <dirent.h> /* getdrive() */
+#include <termios.h> /* SEEK_..., open(), lseek(), tell(), read(), close() */
+
+
 #define	outportb(P,V)	outp(P,V)
 #define	peekb(S,O)	*(unsigned char far *)MK_FP(S,O)
 
@@ -54,13 +49,6 @@ by default, but they're not. Compile with -zp1 or use this:
 
 typedef union REGPACK	regs_t;
 
-#elif defined(__TURBOC__)
-#if __TURBOC__==0x401
-/* neither 'huge' memory model nor 'huge' pointers. 'huge' DOES work
-for older Turbo C++ 1.0 (free download) and newer Borland C++ 3.1 */
-#error Turbo C++ 3.0 'huge' does not work
-#endif
-
 #define	R_AX	r_ax
 #define	R_BX	r_bx
 #define	R_SI	r_si
@@ -70,9 +58,6 @@ for older Turbo C++ 1.0 (free download) and newer Borland C++ 3.1 */
 #define	R_FLAGS	r_flags
 
 typedef struct REGPACK	regs_t;
-
-/* SIGH */
-#if __TURBOC__<0x300
 
 #define _DISK_RESET     0   /* controller hard reset */
 #define _DISK_STATUS    1   /* status of last operation */
@@ -87,7 +72,7 @@ struct diskinfo_t
 	void far *buffer;
 };
 
-unsigned _bios_disk(unsigned cmd, struct diskinfo_t *info)
+unsigned bios_disk(unsigned cmd, struct diskinfo_t *info)
 {
 	struct SREGS sregs;
 	union REGS regs;
@@ -111,7 +96,7 @@ code + number of sectors transferred, as described in the online help.
 	return regs.x.ax;
 }
 
-void _dos_getdrive(unsigned *drive)
+void dos_getdrive(unsigned *drive)
 {
 	regs_t regs;
 
@@ -120,11 +105,6 @@ void _dos_getdrive(unsigned *drive)
 	*drive = (regs.R_AX & 0xFF) + 1;
 }
 
-#endif
-
-#else
-#error Sorry, unsupported compiler
-#endif
 
 /* sections/segments in kernel file */
 #define	SF_EXEC		0x01	/* executable (code) */
