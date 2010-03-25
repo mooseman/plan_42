@@ -1,0 +1,21 @@
+***  Public Domain Dedication *** 
+This code is released to the public domain.  
+
+  *** Acknowledgement and Thanks ***  
+ The original author of Nanos, Peter Hultqvist, has very kindly and 
+generously agreed that I may take over the development of Nanos.  
+He has also very kindly agreed that the Nanos 
+code may be released as "public domain".  
+
+ Very many thanks for your kindness and generosity, Peter!  
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+MAINTAINERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+ 
