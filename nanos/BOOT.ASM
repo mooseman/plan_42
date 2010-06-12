@@ -1,17 +1,5 @@
 ;===================================
 ; This code is released to the public domain. 
-;===================================
-
-;===================================
-;  *** Acknowledgement and Thanks *** 
-;  This code is based on the boot code for Nanos. 
-;  Nanos was written by Peter Hultqvist, and he has 
-;  very kindly and generously accepted my offer to 
-;  take over the maintenance of Nanos.  
-;  Very many thanks, Peter!  
-;===================================
-
-;===================================
 ; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 ; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 ; OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -22,21 +10,12 @@
 ; OTHER DEALINGS IN THE SOFTWARE.
 ;===================================
 
-;===================================
-;  Notes by Andy 
-; To assemble and run this code - 
-;  a) At the command line, type "nasm pdboot.asm" (without the quotes) 
-;  b)  Run it like this (I use Qemu) -  
-;   qemu -fda pdboot   
-;===================================
-
-
-%include 'const.asm'
+%include '../const.asm'
 
 %include 'macro.asm'
 
 ;===================================
-;Public Domain Boot Loader
+;Nanos Boot Loader
 ;
 ; - Report to RS232 9600bps 8 bits 1 stop no flow control
 ;

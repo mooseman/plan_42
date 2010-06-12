@@ -31,7 +31,7 @@
 ;===================================
 
 
-%include 'const.asm'
+%include '../const.asm'
 
 %include 'macro.asm'
 

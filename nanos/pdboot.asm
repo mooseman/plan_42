@@ -212,5 +212,6 @@ gdt:
 	db 0		;Base24-31
 
 end:	 ;boot sign, so that the bios will boot on the drive
-	times 200h-2-($-$$)	 db 0h
-	db 55h, 0AAh
+;	times 200h-2-($-$$)	 db 0h
+        times 512+6-($-$$) db 0
+	db 55h, 0AAh 
