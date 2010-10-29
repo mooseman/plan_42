@@ -1,0 +1,61 @@
+IPC
+Inter-process communication
+
+
+Addressing
+===========
+Name
+Number
+Ports
+
+
+Types
+======
+Messages
+Pipes
+Shared memory
+
+
+Execution
+==========
+Function call
+Message queue
+
+
+
+
+
+Who:	What:
+
+Example 1 (tasks asynchronous):
+task1	send message
+task2	interrupted to handle message
+
+
+Example 2 (tasks synchronous):
+task1	send message
+	halts
+task2	interrupted to handle message
+	send return
+task1	receives control
+
+
+
+
+
+Locate services/tasks
+	in:	Type
+		Vendor
+		Number
+	return:	Call gate
+		Messaging ID
+
+
+
+Kernel services:
+
+	Service location
+		Get service caller id
+		
+	Send messages
+		

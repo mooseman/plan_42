@@ -1,0 +1,3 @@
+    Base    Start  Lnth  Segment       Group   Class  Module
+       0    20000   B42  Loader        (null)  code   loader.a     loader\loader.o
+       0        0  1521  .text         (null)  code   kernel.a     kernel\kernel.o

@@ -1,0 +1,19 @@
+
+Called via callgate 1(Selector: 0008h)
+
+Kernel services to come:
+	PIC
+	DMA
+	PCI
+	Task
+		IO permissions
+
+Format:
+	
+	category.service		;(return values) == (parameters)
+	
+Comment:
+	
+	Registers in parameters are unchanged unless specified in return values
+	
+

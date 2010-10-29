@@ -1,0 +1,32 @@
+;Page management
+
+.alloc:
+	;allocates one or more pages to a memory area specified by a descriptor
+	;in:
+	;   dx = Selector
+	;   ebx = Base
+	;   ecx = Pages
+	;   Settings(R/W, U/S, +Avail...) - not done
+
+.dealloc
+    ;Deallocates...
+    ;Same as allocate
+
+    	    
+.get_linear_base:
+	;Get linear base from Selector
+	;where to allocate/deallocate memory
+	;also check limits
+
+	;in:
+	;   dx = Selector
+	;   ebx = Base
+	;   ecx = Pages
+
+
+
+to come:
+
+get physical address
+in:	selector
+	base

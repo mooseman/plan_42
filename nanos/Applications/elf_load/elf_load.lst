@@ -1,0 +1,493 @@
+     1                                  ;=========================
+     2                                  ;
+     3                                  ;	ELF Loader
+     4                                  ;
+     5                                  ; Create modules based upon ELF data
+     6                                  ;=========================
+     7                                  ;
+     8                                  ;Offset:	Contents
+     9                                  ;0		nanos.bin
+    10                                  ;200h	First loaded file(this)
+    11                                  ;
+    12                                  ;Nanos.bin:
+    13                                  ;LoadEntry:
+    14                                  ;Byte	Size	Contents
+    15                                  ;0		1	':'
+    16                                  ;1		11	FAT Filename("FAT format"): 'FILE	ELF'
+    17                                  ;12		2	File location in memory(in segments)
+    18                                  ;===================================================	
+    19                                  ;
+    20                                  
+    21                                  %include 'elf_spec.asm'
+    22                              <1> ;
+    23                              <1> ;	ELF Specification Data
+    24                              <1> ;
+    25                              <1> 
+    26                              <1> ELF:
+    27                              <1> .Head		equ	0
+    28                              <1> 	.Ident		equ	0
+    29                              <1> 		.i_Magic	equ	0	;7F,'E','L','F'
+    30                              <1> 		.i_Class	equ	4	
+    31                              <1> 		.i_Data	equ	5
+    32                              <1> 		.i_Ver	equ	6
+    33                              <1> 		.i_Pad	equ	7
+    34                              <1> 	.Type	equ	10h
+    35                              <1> 	.Machine	equ	12h
+    36                              <1> 	.Version	equ	14h
+    37                              <1> 	.Entry	equ	18h
+    38                              <1> 	.Phoff	equ	1Ch
+    39                              <1> 	.Shoff	equ	20h
+    40                              <1> 	.Flags	equ	24h
+    41                              <1> 	.hsize	equ	28h
+    42                              <1> 	.pesize	equ	2Ah
+    43                              <1> 	.phnum	equ	2Ch
+    44                              <1> 	.sesize	equ	2Eh
+    45                              <1> 	.shnum	equ	30h
+    46                              <1> 	.strindex	equ	32h	
+    47                              <1> 	
+    48                              <1> 	
+    49                              <1> ;Program Header Entry:
+    50                              <1> 	.p_Type		equ	 0h
+    51                              <1> 	.p_Offset		equ	 4h
+    52                              <1> 	.p_Vaddr		equ	 8h
+    53                              <1> 	.p_Paddr		equ	0Ch
+    54                              <1> 	.p_FileSize	equ	10h
+    55                              <1> 	.p_MemSize	equ	14h
+    56                              <1> 	.p_Flags		equ	18h
+    57                              <1> 	.p_Align		equ	1Ch
+    58                              <1> 	
+    59                              <1> 	
+    60                              <1> 	.p_Type_Load	equ	1
+    61                              <1> 	
+    62                              <1> 	.p_Flag_X		equ	1
+    63                              <1> 	.p_Flag_W		equ	2
+    64                              <1> 	.p_Flag_R		equ	4
+    65                              <1> 	
+    66                              <1> 	
+    67                                  %include 'nanos.inc'
+    68                              <1> ;
+    69                              <1> ;	Nanos Header
+    70                              <1> ;
+    71                              <1> 
+    72                              <1> %define Kernel 8:0
+    73                              <1> 
+    74                              <1> 	desc.create_data	equ	20h		;(eax = Selector) == (edx [Settings][Selector], ecx Size)
+    75                              <1> 	desc.delete		equ	21h		;(eax Status) == (edx Selector)
+    76                              <1> 	desc.set			equ	25h		;() == (edx [Settings][Selector])
+    77                              <1> 	page.alloc		equ	28h		;() == (edx = [Settings][Selector], ebx = Base, ecx = Size)
+    78                              <1> 	
+    79                              <1> 	module.create		equ	10h		;(eax Selector) == (ecx LDT Size)
+    80                              <1> 	module.move		equ	14h		;(eax Selector) == (edx Source selector, ebx Target [module][selector])
+    81                              <1> 	module.movetask	equ	15h		;() == (edx Source Task selector, ebx Target Module)
+    82                              <1> 	
+    83                              <1> 	mult.create		equ	30h		;(eax = Selector) == (edx EIP, ebx ss, ecx ESP)
+    84                              <1> 	mult.add			equ	34h		;() == (dx = TSS Selector)
+    85                              <1> 	mult.get			equ	32h		;() == (edx TSS Selector, ds:ebx TSS segment data)
+    86                              <1> 	mult.set			equ	33h		;() == (edx TSS Selector, ds:ebx TSS segment data)
+    87                              <1> 	
+    88                              <1> %if 1 = 0
+    89                              <1> 
+    90                              <1> ;00		;OS specific
+    91                              <1> 	dd	sys.version		;(eax = Version) == ()
+    92                              <1> 	dd		.no_service
+    93                              <1> 	dd		.no_service
+    94                              <1> 	dd		.no_service
+    95                              <1> 	dd	page.freemem		;(eax Free memory) == ()
+    96                              <1> 	dd		.no_service
+    97                              <1> 	dd		.no_service
+    98                              <1> 	dd		.no_service
+    99                              <1> ;08		System services
+   100                              <1> 	dd		.no_service
+   101                              <1> 	dd		.no_service
+   102                              <1> 	dd		.no_service
+   103                              <1> 	dd		.no_service	;connect IRQ to interface
+   104                              <1> 	dd		.no_service	;DMA
+   105                              <1> 	dd		.no_service	;PIC/APIC
+   106                              <1> 	dd		.no_service
+   107                              <1> 	dd		.no_service
+   108                              <1> ;10		Module management
+   109                              <1> 	dd	module.create		;(eax Selector) == (ecx LDT Size)
+   110                              <1> 	dd	module.delete		;() == (edx Selector)
+   111                              <1> 	dd		.no_service	;get settings
+   112                              <1> 	dd		.no_service	;set settings
+   113                              <1> 	dd	module.move		;(eax Selector) == (edx Source selector, ebx Target [module][selector])
+   114                              <1> 	dd	module.movetask	;() == (edx Source Task selector, ebx Target Module)
+   115                              <1> 	dd		.no_service	
+   116                              <1> 	dd		.no_service
+   117                              <1> ;18 +	Unknown
+   118                              <1> 	dd		.no_service
+   119                              <1> 	dd	life	;return meaning of life in eax
+   120                              <1> 	dd		.no_service
+   121                              <1> 	dd		.no_service
+   122                              <1> 	dd		.no_service
+   123                              <1> 	dd		.no_service
+   124                              <1> 	dd		.no_service
+   125                              <1> 	dd		.no_service
+   126                              <1> ;20 +	Descriptors, Linear memory
+   127                              <1> 	dd	desc.create_data		;(eax = Selector) == (edx [Settings][Selector], ecx Size)
+   128                              <1> 	dd	desc.delete			;(eax Status) == (edx Selector)
+   129                              <1> 	dd		.no_service
+   130                              <1> 	dd		.no_service
+   131                              <1> 	dd	desc.get				;(eax [Settings][Selector]) == (edx Selector)
+   132                              <1> 	dd	desc.set				;() == (edx [Settings][Selector])
+   133                              <1> 	dd		.no_service
+   134                              <1> 	dd		.no_service
+   135                              <1> ;28 +	Paging, Physical memory
+   136                              <1> 	dd	page.alloc		;() == (edx = [Settings][Selector], ebx = Base, ecx = Size)
+   137                              <1> 	dd	page.dealloc		;() == (edx = Selector, ebx = Base, ecx = Size)
+   138                              <1> 	dd		.no_service
+   139                              <1> 	dd		.no_service
+   140                              <1> 	dd		.no_service	;get phys address
+   141                              <1> 	dd		.no_service
+   142                              <1> 	dd	page.phys_allocate		;() == (edx Selector, ebx Base, edi First PTE, ecx Size)
+   143                              <1> 	dd		.no_service	;
+   144                              <1> ;30 +	Multitasking
+   145                              <1> 	dd	mult.create		;(eax = Selector) == ()
+   146                              <1> 	dd	mult.delete		;() == (edx Selector)
+   147                              <1> 	dd	mult.get			;() == (edx TSS Selector, ds:ebx TSS segment data)
+   148                              <1> 	dd	mult.set			;() == (edx TSS Selector, ds:ebx TSS segment data)
+   149                              <1> 	dd	mult.add			;() == (dx = TSS Selector)
+   150                              <1> 	dd	mult.remove		;(eax Status) == (edx = TSS Selector)
+   151                              <1> 	dd		.no_service
+   152                              <1> 	dd		.no_service	
+   153                              <1> ;38 +	Interface
+   154                              <1> 	dd	interface.create	;() == (edx Type, ebx Process(TSS selector))
+   155                              <1> 	dd	interface.delete	;() == (edx Type)
+   156                              <1> 	dd	interface.call		;() == (edx Type)
+   157                              <1> 	dd		.no_service	;Get param
+   158                              <1> 	dd	interface.connect	;() == (edx Type, ebx [source][target] module)
+   159                              <1> 	dd		.no_service	;Disconnect interface
+   160                              <1> 	dd		.no_service
+   161                              <1> 	dd		.no_service	;Abort interface
+   162                              <1> 	
+   163                              <1> %endif
+   164                                  [bits 32]
+   165                                  
+   166                                  [org 200h]
+   167                                  
+   168                                  
+   169                                  dat:
+   170                                  	.sign	equ	0	;=':'
+   171                                  	.DPL		equ	1	;DPL '0'-'3'
+   172                                  	.res		equ	2	;Reserved/Unknown
+   173                                  	.Name	equ	3	;"FILE	ELF"
+   174                                  	.Seg		equ	14	;Segment Offset
+   175                                  	.EntSize	equ	16
+   176                                  	.EntSize2	equ	4
+   177                                  	
+   178                                  start:
+   179 00000000 31D2                    	xor	edx, edx
+   180 00000002 83C210                  	add	edx, byte dat.EntSize	;edx = first file after this
+   181                                  	
+   182                                  Load:
+   183                                  	;loop through all ELF modules
+   184                                  
+   185 00000005 803A3A                  	cmp	[edx+dat.sign], byte ':'	;Start of Filename
+   186 00000008 0F8545020000            	jne near connect
+   187                                  	
+   188                                  	;File found, load it
+   189 0000000E 8915[6D020000]          	mov	[FilePtr], edx	;Save Ptr
+   190                                  	
+   191 00000014 0FB75A0E                	movzx ebx, word [edx+dat.Seg]
+   192 00000018 C1E304                  	shl	ebx, 4
+   193                                  	;ebx = location of file in memory
+   194 0000001B 891D[71020000]          	mov	[FileMem], ebx
+   195                                  
+   196                                  ;Check if an ELF file
+   197                                  	
+   198                                  	;Header
+   199 00000021 BE[55020000]            	mov	esi, CompareData
+   200 00000026 89DF                    	mov	edi, ebx
+   201 00000028 B918000000              	mov	ecx, Compare_Size
+   202 0000002D F3A6                    	rep	cmpsb
+   203 0000002F 0F8510020000            	jne near LoadNext
+   204                                  
+   205                                  ;Create a module
+   206 00000035 B900010000              	mov	ecx, 100h
+   207 0000003A B810000000              	mov	eax, module.create		;(eax Selector) == (ecx LDT Size)
+   208 0000003F 9A000000000800          	call	Kernel
+   209 00000046 0F82F9010000            	jc near LoadNext
+   210 0000004C A3[75020000]            	mov	[ModSel], eax		;Save Module segment
+   211                                  	
+   212                                  ;Create a Task
+   213                                  	;Create Task
+   214 00000051 B830000000              	mov	eax, mult.create		;(eax = Selector) == ()
+   215 00000056 9A000000000800          	call	Kernel
+   216 0000005D 72FE                    	jc	$
+   217 0000005F A3[79020000]            	mov	[TaskSel], eax
+   218                                  	
+   219                                  	;Get Task Data
+   220 00000064 89C2                    	mov	edx, eax
+   221 00000066 BB[81020000]            	mov	ebx, TSS
+   222 0000006B B832000000              	mov	eax, mult.get		;() == (edx TSS Selector, ds:ebx TSS segment data)
+   223 00000070 9A000000000800          	call	Kernel
+   224                                  	
+   225                                  	;get Privilege level
+   226 00000077 8B15[6D020000]          	mov	edx, [FilePtr]	;edx = file data
+   227 0000007D 8A5201                  	mov	dl, [edx + dat.DPL]
+   228 00000080 80EA30                  	sub	dl, '0'
+   229 00000083 81E203000000            	and	edx, 011b		;edx = DPL
+   230                                  	
+   231                                  	;SS
+   232                                  	StackSize	equ	1000h	
+   233 00000089 81CA04000200            	or	edx, 00020004h	;Data(W), Any(LDT) + DPL
+   234 0000008F B900100000              	mov	ecx, StackSize
+   235 00000094 B820000000              	mov	eax, desc.create_data		;(eax = Selector) == (edx [Settings][Selector], ecx Size)
+   236 00000099 9A000000000800          	call	Kernel
+   237 000000A0 72FE                    	jc	$
+   238                                  
+   239                                  	;Move SS to module
+   240 000000A2 89C2                    	mov	edx, eax	;source
+   241 000000A4 8B1D[75020000]          	mov	ebx, [ModSel]
+   242 000000AA C1E310                  	shl	ebx, 10h
+   243 000000AD 63D3                    	arpl	bx, dx		
+   244 000000AF 83C304                  	add	ebx, byte 0100b	;ebx = [module][Any selector in module, DPL same as SS]
+   245 000000B2 B814000000              	mov	eax, module.move		;(eax Selector) == (edx Source selector, ebx Target [module][selector])
+   246 000000B7 9A000000000800          	call	Kernel
+   247 000000BE 72FE                    	jc	$
+   248 000000C0 66A3[D1020000]          	mov	[TSS.ss], ax
+   249                                  	
+   250                                  	
+   251                                  ;Load all Segments in the Program Header Table
+   252 000000C6 8B1D[71020000]          	mov	ebx, [FileMem]
+   253 000000CC 8B731C                  	mov	esi, [ebx + ELF.Phoff]
+   254 000000CF 01DE                    	add	esi, ebx
+   255 000000D1 0FB74B2C                	movzx ecx, word [ebx + ELF.phnum]	;ecx = entry count
+   256                                  	
+   257                                  	
+   258                                  	;esi = start of entry
+   259                                  	;ecx = entries left
+   260                                  
+   261                                  	LoadSegment:
+   262 000000D5 81F900000000            	cmp	ecx, 0
+   263 000000DB 0F8423010000            	je near SegmentsDone
+   264 000000E1 49                      	dec	ecx
+   265                                  	
+   266                                  	;Check Segment type:
+   267 000000E2 813E01000000            	cmp	[esi + ELF.p_Type], dword ELF.p_Type_Load
+   268 000000E8 0F8505010000            	jne near NextSegment
+   269                                  
+   270 000000EE 51                      	push	ecx
+   271                                  		;Get size needed
+   272 000000EF 8B4E08                  		mov	ecx, [esi + ELF.p_Vaddr]
+   273 000000F2 034E14                  		add	ecx, [esi + ELF.p_MemSize]	;ecx = Vaddress + Memsize
+   274                                  
+   275                                  		;Get DPL
+   276 000000F5 8B15[6D020000]          		mov	edx, [FilePtr]	;edx = file data
+   277 000000FB 8A5201                  		mov	dl, [edx + dat.DPL]
+   278 000000FE 80EA30                  		sub	dl, '0'
+   279 00000101 81E203000000            		and	edx, 011b		;edx = DPL
+   280                                  
+   281                                  		;Create Descriptor			
+   282 00000107 81CA04000200            		or	edx, 00020004h	;Data(W), Any(LDT)
+   283 0000010D B820000000              		mov	eax, desc.create_data		;(eax = Selector) == (edx [Settings][Selector], ecx Size)
+   284 00000112 9A000000000800          		call	Kernel
+   285 00000119 0F82D3000000            		jc near SegmentDone
+   286 0000011F A3[7D020000]            		mov	[DataSel], eax
+   287                                  		
+   288                                  		;Fill With Pages		
+   289 00000124 BA00000600              		mov	edx, 00060000h	;User, Write
+   290 00000129 668B15[7D020000]        		mov	dx, [DataSel]
+   291 00000130 8B5E08                  		mov	ebx, [esi + ELF.p_Vaddr]
+   292 00000133 8B4E14                  		mov	ecx, [esi + ELF.p_MemSize]
+   293 00000136 B828000000              		mov	eax, page.alloc		;() == (edx = [Settings][Selector], ebx = Base, ecx = Size)
+   294 0000013B 9A000000000800          		call	Kernel
+   295 00000142 72FE                    		jc	$
+   296                                  		
+   297                                  		;Copy data
+   298 00000144 56                      		push	esi
+   299 00000145 8B4E10                  			mov	ecx, [esi + ELF.p_FileSize]
+   300 00000148 FF35[7D020000]          			push dword [DataSel]
+   301 0000014E 07                      			pop	es
+   302 0000014F 8B7E08                  			mov	edi, [esi + ELF.p_Vaddr]
+   303                                  			
+   304 00000152 8B7604                  			mov	esi, [esi + ELF.p_Offset]
+   305 00000155 0335[71020000]          			add	esi, [FileMem]
+   306 0000015B F3A4                    			rep	movsb
+   307                                  			
+   308 0000015D 5E                      		pop	esi
+   309                                  		;Zero rest of data
+   310 0000015E 8B4E14                  		mov	ecx, [esi + ELF.p_MemSize]
+   311 00000161 2B4E10                  		sub	ecx, [esi + ELF.p_FileSize]
+   312 00000164 31C0                    		xor	eax, eax
+   313 00000166 F3AA                    		rep	stosb
+   314 00000168 1E                      		push	ds
+   315 00000169 07                      		pop	es	;Restore es
+   316                                  		
+   317                                  						
+   318                                  		;Get Segment Settings
+   319 0000016A 8B5618                  		mov	edx, [esi + ELF.p_Flags]		;RWX Flags
+   320 0000016D 0FBAE200                		bt	edx, 0
+   321 00000171 720B                    		jc	LoadCode
+   322                                  		LoadData:
+   323 00000173 81E202000000            			and	edx, 0010b	;Writeable
+   324 00000179 E90B000000              			jmp	LoadCodeData
+   325                                  		LoadCode:	
+   326 0000017E D1EA                    			shr	edx, 1
+   327 00000180 81E202000000            			and	edx, 0010b	;Readable
+   328 00000186 83C208                  			add	edx, byte 8	;Code bit
+   329                                  		LoadCodeData:
+   330 00000189 C1E210                  		shl	edx, 10h
+   331 0000018C 668B15[7D020000]        		mov	dx, [DataSel]
+   332                                  		
+   333                                  		;Change Descriptor
+   334 00000193 B825000000              		mov	eax, desc.set		;() == (edx [Settings][Selector])
+   335 00000198 9A000000000800          		call	Kernel
+   336 0000019F 72FE                    		jc	$
+   337                                  		
+   338                                  		;Move descriptor to module
+   339 000001A1 8B15[7D020000]          		mov	edx, [DataSel]
+   340 000001A7 8B1D[75020000]          		mov	ebx, [ModSel]
+   341 000001AD C1E310                  		shl	ebx, 10h
+   342 000001B0 66BB0400                		mov	bx, 4
+   343 000001B4 63D3                    		arpl	bx, dx
+   344 000001B6 B814000000              		mov	eax, module.move		;(eax Selector) == (edx Source selector, ebx Target [module][selector])
+   345 000001BB 9A000000000800          		call	Kernel
+   346                                  		
+   347                                  		
+   348                                  		;Save Selector for TSS
+   349 000001C2 8B5618                  		mov	edx, [esi + ELF.p_Flags]		;RWX Flags
+   350 000001C5 0FBAE200                		bt	edx, 0
+   351 000001C9 7216                    		jc	WriteCode
+   352                                  		WriteData:
+   353 000001CB 66813D[D5020000]00-     			cmp word [TSS.ds], 0
+   354 000001D3 00                 
+   355 000001D4 751C                    			jne	WriteDone		;Already taken
+   356 000001D6 66A3[D5020000]          			mov	[TSS.ds], ax
+   357 000001DC E911000000              		jmp	WriteDone
+   358                                  		WriteCode:
+   359 000001E1 66813D[CD020000]00-     			cmp word [TSS.cs], 0
+   360 000001E9 00                 
+   361 000001EA 7506                    			jne	WriteDone		;Already taken
+   362 000001EC 66A3[CD020000]          			mov	[TSS.cs], ax		
+   363                                  		WriteDone:
+   364                                  			
+   365                                  		SegmentDone:
+   366 000001F2 59                      	pop	ecx
+   367                                  	
+   368                                  	NextSegment:
+   369 000001F3 8B1D[71020000]          	mov	ebx, [FileMem]
+   370 000001F9 0FB75B2A                	movzx ebx, word [ebx + ELF.pesize]
+   371 000001FD 01DE                    	add	esi, ebx
+   372 000001FF E9D1FEFFFF              	jmp	LoadSegment
+   373                                  	
+   374                                  	SegmentsDone:
+   375                                  	;All segments created adn moved
+   376                                  	
+   377                                  	;Set TSS Data
+   378 00000204 8B15[79020000]          	mov	edx, [TaskSel]
+   379 0000020A BB[81020000]            	mov	ebx, TSS
+   380 0000020F B833000000              	mov	eax, mult.set		;() == (edx TSS Selector, ds:ebx TSS segment data)
+   381 00000214 9A000000000800          	call	Kernel
+   382 0000021B 72FE                    	jc	$
+   383                                  	
+   384                                  	;Move Task
+   385 0000021D 8B15[79020000]          	mov	edx, [TaskSel]
+   386 00000223 8B1D[75020000]          	mov	ebx, [ModSel]
+   387 00000229 B815000000              	mov	eax, module.movetask	;() == (edx Source Task selector, ebx Target Module)
+   388 0000022E 9A000000000800          	call	Kernel
+   389 00000235 72FE                    	jc	$
+   390                                  	
+   391                                  	;Start task
+   392 00000237 B834000000              	mov	eax, mult.add		;() == (dx = TSS Selector)
+   393 0000023C 9A000000000800          	call	Kernel
+   394 00000243 72FE                    	jc	$
+   395                                  
+   396                                  	LoadNext:	;Module
+   397                                  	
+   398                                  	;Move pointer to next file
+   399 00000245 8B15[6D020000]          	mov	edx, [FilePtr]
+   400 0000024B 83C210                  	add	edx, byte dat.EntSize
+   401 0000024E E9B2FDFFFF              	jmp	Load
+   402                                  
+   403                                  
+   404                                  
+   405                                  connect:
+   406                                  	;make connections between all modules
+   407                                  	;list = list of module selectors
+   408                                  
+   409                                  	;Make all connections
+   410                                  	
+   411                                  	
+   412                                  	
+   413                                  	;Terminate this module
+   414 00000253 EBFE                    	jmp	connect
+   415                                  	
+   416                                  	
+   417                                  CompareData:
+   418                                  .Head:
+   419 00000255 7F454C46                	.Magic:	db	7Fh, 'E', 'L', 'F'
+   420 00000259 01                      	.Class:	db	1	;32 Bit file
+   421 0000025A 01                      	.Encode:	db	1	;LSB Encoding
+   422 0000025B 01                      	.Version	db	1	;ELF Version
+   423 0000025C 00<rept>                	.Pad:	times 16 - ($-.Head)	db 0
+   424                                  	
+   425 00000265 0200                    	.Type:	dw	2	;Executable
+   426 00000267 0300                    	.Machine:	dw	3	;Intel 386
+   427 00000269 01000000                			dd	1	;ELF Version
+   428                                  Compare_Size	equ $-.Head
+   429                                  	
+   430                                  	
+   431                                  ;Module Data
+   432 0000026D 00000000                FilePtr:		dd	0	;Pointer at file list
+   433                                  
+   434 00000271 00000000                FileMem:		dd	0	;File offset
+   435                                  
+   436 00000275 00000000                ModSel		dd	0	;Module Selector
+   437 00000279 00000000                TaskSel		dd	0	;Task Selector
+   438 0000027D 00000000                DataSel		dd	0	;Data Selector
+   439                                  
+   440                                  TSS:
+   441 00000281 0000                    .link dw	0	;Task Link
+   442 00000283 0000                    	dw	0	;reserved
+   443                                  
+   444 00000285 00000000                	dd	0	;esp0
+   445 00000289 0000                    	dw	0	;ss0
+   446 0000028B 0000                    	dw	0	;reserved
+   447 0000028D 00000000                	dd	0	;esp1
+   448 00000291 0000                    	dw	0	;ss1
+   449 00000293 0000                    	dw	0	;reserved
+   450 00000295 00000000                	dd	0	;esp2
+   451 00000299 0000                    	dw	0	;ss2
+   452 0000029B 0000                    	dw	0	;reserved
+   453                                  
+   454 0000029D 00000000                	dd	0	;cr3/PDBR
+   455                                  
+   456 000002A1 00000000                .eip	dd	0	;eip = start
+   457 000002A5 02020000                	dd	202h	;eflags
+   458                                  
+   459 000002A9 00000000                	dd	0	;eax
+   460 000002AD 00000000                	dd	0	;ecx
+   461 000002B1 00000000                	dd	0	;edx
+   462 000002B5 00000000                	dd	0	;ebx
+   463                                  
+   464 000002B9 FC0F0000                	dd	0FFCh ;esp
+   465 000002BD 00000000                	dd	0	;ebp
+   466                                  
+   467 000002C1 00000000                	dd	0	;esi
+   468 000002C5 00000000                	dd	0	;edi
+   469                                  
+   470 000002C9 0000                    	dw	0	;es
+   471 000002CB 0000                    	dw	0	;	Reserved
+   472 000002CD 0000                    .cs	dw	0	;cs
+   473 000002CF 0000                    	dw	0	;	Reserved
+   474 000002D1 0000                    .ss	dw	0	;ss
+   475 000002D3 0000                    	dw	0	;	Reserved
+   476 000002D5 0000                    .ds	dw	0	;ds
+   477 000002D7 0000                    	dw	0	;	Reserved
+   478 000002D9 0000                    	dw	0	;fs
+   479 000002DB 0000                    	dw	0	;	Reserved
+   480 000002DD 0000                    	dw	0	;gs
+   481 000002DF 0000                    	dw	0	;	Reserved
+   482 000002E1 0000                    	dw	0	;ldt
+   483 000002E3 0000                    	dw	0	;	Reserved
+   484                                  
+   485 000002E5 0000                    	dw	0	;trap(bit0)
+   486 000002E7 6800                    	dw	(.iobase - TSS)	;IO map Base Address
+   487                                  .iobase:
+   488                                  
+   489                                  ;error checking
+   490                                  times	68h-(.iobase-TSS)  nop
+   491                                  times	(.iobase-TSS)-68h  nop
+   492                                  	
+   493                                  	

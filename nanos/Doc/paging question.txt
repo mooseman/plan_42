@@ -1,0 +1,32 @@
+From: neocoder
+Date: 12/09/2002 11:32AM PST
+Status: Waiting for Answer
+Points: 75
+
+Hi
+
+
+I'm writing an os in Pmode using paging.
+My problem:
+After the following code:
+mov eax, cr0
+or  eax, 80000000h ;Pmode is initiated earlier
+mov cr0, eax ;Enable Paging
+-------
+It seems that the computer(and Bochs) starts using Paging immediately at the next instruction.
+
+My solution so far has been to set up the page tables so that it works.
+
+But I would prefer something simple since the next instruction i would like to execute is:
+jmp sel:off ;Using paging.
+
+I know that Pmode with descriptors start first when I change a segment register.
+Is there any way for me to do something similar with paging?
+
+         Peter
+Question History
+
+Comment from Dancie
+Accept Comment As Answer  12/09/2002 04:37PM PST
+I am not really sure what you need, but maybe you could set up a task state descriptor with the pdbr set to the correct page table and also set the eip cs selector etc.
+Then do a JMP TASK_STATE:0 to your code. Send a reply if this is not what you want.

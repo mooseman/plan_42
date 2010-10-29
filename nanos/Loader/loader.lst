@@ -1,0 +1,2356 @@
+     1                                  	%define USERERRORS ERROR!
+     2                                  
+     3                                  	%define BSTS "Better Safe Than Sorry!"
+     4                                  ;This only checks actions that are compile-static
+     5                                  ;If no errors occurs whith this on, none should occur with it off.
+     6                                  
+     7                                  %include 'extern.asm'
+     8                              <1> ;========Nanos Kernel==================
+     9                              <1> extern	Kernel_Start
+    10                              <1> extern	Kernel_Size	;in pages
+    11                              <1> extern	Loader_Size	;in pages
+    12                              <1> extern	Loader_Size_bytes
+    13                              <1> 
+    14                              <1> extern	service
+    15                              <1> 
+    16                              <1> extern	Multitasking.idle
+    17                              <1> extern	Multitasking.interrupt
+    18                              <1> extern	Multitasking.device_not_available
+    19                              <1> extern	Multitasking.tss
+    20                              <1> 
+    21                              <1> extern	Interrupt.exception00
+    22                              <1> extern	Interrupt.exception01
+    23                              <1> extern	Interrupt.exception02
+    24                              <1> extern	Interrupt.exception03
+    25                              <1> extern	Interrupt.exception04
+    26                              <1> extern	Interrupt.exception05
+    27                              <1> extern	Interrupt.exception06
+    28                              <1> extern	Interrupt.exception07
+    29                              <1> extern	Interrupt.exception08
+    30                              <1> extern	Interrupt.exception09
+    31                              <1> extern	Interrupt.exception0A
+    32                              <1> extern	Interrupt.exception0B
+    33                              <1> extern	Interrupt.exception0C
+    34                              <1> extern	Interrupt.exception0D
+    35                              <1> extern	Interrupt.exception0E
+    36                              <1> extern	Interrupt.exception0F
+    37                              <1> extern	Interrupt.exception10
+    38                              <1> extern	Interrupt.exception11
+    39                              <1> extern	Interrupt.exception12
+    40                              <1> extern	Interrupt.exception13
+    41                              <1> extern	Interrupt.exception14
+    42                              <1> extern	Interrupt.exception15
+    43                              <1> extern	Interrupt.exception16
+    44                              <1> extern	Interrupt.exception17
+    45                              <1> extern	Interrupt.exception18
+    46                              <1> extern	Interrupt.exception19
+    47                              <1> extern	Interrupt.exception1A
+    48                              <1> extern	Interrupt.exception1B
+    49                              <1> extern	Interrupt.exception1C
+    50                              <1> extern	Interrupt.exception1D
+    51                              <1> extern	Interrupt.exception1E
+    52                              <1> extern	Interrupt.exception1F
+    53                                  %include '../mem.asm'
+    54                              <1> ;constants
+    55                              <1> global lin_kern
+    56                              <1> global pages
+    57                              <1> extern Kernel_Size
+    58                              <1> 
+    59                              <1> ;The rest is in pages, Example: lin_PD*pages=linear address to Page Directory
+    60                              <1> pages	equ 1000h
+    61                              <1> 
+    62                              <1> ;Descriptors
+    63                              <1> desc_null equ 0   ;Null
+    64                              <1> desc_call equ 1   ;Call Gate
+    65                              <1> desc_kern equ 2   ;Code(Kernel)
+    66                              <1> desc_data equ 3   ;Data(0-4G)
+    67                              <1> 
+    68                              <1> desc_Idle_TSS equ 4   ;Multitasking TSS
+    69                              <1> desc_Stack equ 5   ;Idle TSS Stack
+    70                              <1> 
+    71                              <1> desc_Mod_LDT	equ 6	;Loader module
+    72                              <1> desc_Mod_TSS	equ 7	;Loader module task
+    73                              <1> 
+    74                              <1> ;Selectors
+    75                              <1> null_sel equ (desc_null << 3)
+    76                              <1> call_sel equ (desc_call << 3)
+    77                              <1> kern_sel equ (desc_kern << 3)
+    78                              <1> data_sel equ (desc_data << 3)
+    79                              <1> 
+    80                              <1> Idle_TSS_sel equ (desc_Idle_TSS << 3)
+    81                              <1> Stack_sel	equ (desc_Stack << 3)
+    82                              <1> 
+    83                              <1> Mod_LDT_sel	equ 6 << 3	;Loader module
+    84                              <1> Mod_TSS_sel	equ 7 << 3	;Loader module task
+    85                              <1> 
+    86                              <1> ;Physical memory
+    87                              <1> mem_PD	equ	1
+    88                              <1> 
+    89                              <1> ;Linear memory
+    90                              <1> lin_PT	equ 0
+    91                              <1> size_PT	equ 1024 ;PT(1)    All Page tables
+    92                              <1> 
+    93                              <1> lin_BIOS	equ	lin_PT + size_PT	
+    94                              <1> size_BIOS	equ	1
+    95                              <1> lin_IDT	equ lin_BIOS + size_BIOS
+    96                              <1> size_IDT	equ 1    ;IDT(Actually 0.5 pages)
+    97                              <1> lin_TL	equ lin_IDT + size_IDT
+    98                              <1> size_TL	equ 1    ;Task List(8192 tasks = 8 pages) 1024 tasks[4Byte] = 1p
+    99                              <1> lin_GDT	equ lin_TL+size_TL
+   100                              <1> size_GDT	equ 16   ;GDT(1)
+   101                              <1> 
+   102                              <1> lin_FLM	equ lin_GDT + size_GDT
+   103                              <1> size_FLM	equ 1
+   104                              <1> 
+   105                              <1> lin_Stack	equ lin_FLM + size_FLM		;Kernel Stack
+   106                              <1> size_Stack equ 1
+   107                              <1> 
+   108                              <1> ;Module segments
+   109                              <1> ;Stack
+   110                              <1> lin_Mod_Stack	equ	lin_Stack+size_Stack
+   111                              <1> size_Mod_Stack	equ	1
+   112                              <1> ;LDT
+   113                              <1> lin_Mod_LDT	equ	lin_Mod_Stack + size_Mod_Stack
+   114                              <1> size_Mod_LDT	equ	1
+   115                              <1> ;TSS
+   116                              <1> lin_Mod_TSS	equ	lin_Mod_LDT + size_Mod_LDT
+   117                              <1> size_Mod_TSS	equ	1
+   118                              <1> ;Module end
+   119                              <1> 
+   120                              <1> lin_kern	equ lin_Mod_TSS + size_Mod_TSS
+   121                              <1> size_kern	equ Kernel_Size ;Kernel
+   122                              <1> 
+   123                              <1> lin_FPT	equ lin_kern + size_kern
+   124                              <1> ;size_FPT equ System_Mem_FreePT
+   125                              <1>              ;Free Page Table(1 Page: 4MB physical)
+   126                              <1>              
+   127                              <1> lin_Mod_Data	equ	1024 * 2 + 512
+   128                                  %include '../const.asm'
+   129                              <1> global   mem
+   130                              <1> 
+   131                              <1> ;=========Placement of Loader + Data=============
+   132                              <1> memseg   equ  2000h ;start memory: segment
+   133                              <1> mem      equ  (memseg * 10h)
+   134                              <1> 
+   135                              <1> stack_esp   equ 1000h - 4
+   136                              <1> 
+   137                              <1> IRQBase	equ	20h
+   138                              <1> 
+   139                              <1> ;Nanos Data Area
+   140                              <1> ;Where Nanos places its parameters
+   141                              <1> 
+   142                              <1> Loader_init: ;Location of data
+   143                              <1> .data_end	equ	200h-4	;next segment after loaded data
+   144                              <1> 
+   145                              <1> 
+   146                              <1> 
+   147                              <1> 
+   148                              <1> Nanos_init:
+   149                              <1> ;BIOS memory:
+   150                              <1> ;0	old IDT
+   151                              <1> ;0	Nanos Data
+   152                              <1> .MemSize		equ	0
+   153                              <1> .lin_FPT		equ	4
+   154                              <1> .lin_FPT_Size	equ	8
+   155                              <1> 
+   156                              <1> ;400h	BIOS data
+   157                              <1> 
+   158                                  %include '../struc.asm'
+   159                              <1> ;
+   160                              <1> ; Nanos Structures
+   161                              <1> ;
+   162                              <1> 
+   163                              <1> ;==============================================================================
+   164                              <1> ; BIOS data, Nanos data
+   165                              <1> System:
+   166                              <1> 	.Base	equ	lin_BIOS * pages
+   167                              <1> 	
+   168                              <1> 	.old_Interrupt	equ	System.Base +   0
+   169                              <1> 	.BIOS_Data	equ	System.Base	+ 400h
+   170                              <1> 	.Nanos_Data	equ	System.Base	+ 800h
+   171                              <1> 	.Memsize		equ	System.Base	+ Nanos_init.MemSize
+   172                              <1> 	.lin_FPT		equ	System.Base	+ Nanos_init.lin_FPT
+   173                              <1> 	.lin_FPT_Size	equ	System.Base	+ Nanos_init.lin_FPT_Size
+   174                              <1> 	
+   175                              <1> 
+   176                              <1> ;==============================================================================
+   177                              <1> ;Multitasking
+   178                              <1> multitasking_struc:
+   179                              <1> 	;Task List
+   180                              <1> 		.Head		equ	lin_TL * pages
+   181                              <1> 		.HeadSize		equ	10h
+   182                              <1> 		.Base		equ	.Head + .HeadSize
+   183                              <1> 		.Size		equ	size_TL * pages - .HeadSize
+   184                              <1> 		.Entry_Size_2	equ  2
+   185                              <1> 		.Entry_Size	equ	4 ;bytes
+   186                              <1> 
+   187                              <1> 	;Header:
+   188                              <1> 		.current	equ	0	;4 byte Pointer at current running entry
+   189                              <1> 		.last	equ	4	;4 byte Pointer at last entry
+   190                              <1> 		.float	equ	8	;2 byte TSS selector of current floating point state owner
+   191                              <1> 
+   192                              <1> 	;Entry structure:
+   193                              <1> 		;.current	equ	0	;2 byte Running TSS	(= interface if not equal Original TSS)
+   194                              <1> 		.original	equ	2	;2 byte Original TSS
+   195                              <1> 
+   196                              <1> 
+   197                              <1> ;==============================================================================
+   198                              <1> ;Module
+   199                              <1> ;	one LDT
+   200                              <1> module_struc:	;Module Data(= LDT base & FFFFF000h)
+   201                              <1> 	.Name		equ	 0h	;10h bytes
+   202                              <1> 	;.free		equ	14h	;Next entry
+   203                              <1> 	
+   204                              <1> 	.Interface		equ	80h	;Interface List
+   205                              <1> 		.InterfaceEntSize	equ	 8h	;Size of structure
+   206                              <1> 		.InterfaceEntSize2	equ	 3	;Size of structure 2Log
+   207                              <1> 		.InterfaceCount	equ	10h	;number of interfaces
+   208                              <1> 		.InterfaceSize		equ	.InterfaceCount * .InterfaceEntSize
+   209                              <1> 	
+   210                              <1> 	.LDT			equ	.Interface + .InterfaceSize
+   211                              <1> 
+   212                              <1> ;Interface List
+   213                              <1> ; inside Module
+   214                              <1> interface_struc:	;Interface entry structure
+   215                              <1> 	.Type	equ	0
+   216                              <1> 		.Type_present		equ	 1
+   217                              <1> 		.Type_in_interface	equ	 2	;otherwise an out interface
+   218                              <1> 		.Type_in_reg		equ	 4
+   219                              <1> 		.Type_in_float		equ	 8
+   220                              <1> 		.Type_in_copy		equ	10h	;Only one of these three
+   221                              <1> 		.Type_in_page		equ	20h	; |
+   222                              <1> 		.Type_in_desc		equ	30h	; /
+   223                              <1> 		.Type_out_reg		equ	40h
+   224                              <1> 		.Type_out_float	equ	80h
+   225                              <1> 		.Type_Type_map		equ	0FFFFFF00h
+   226                              <1> 	
+   227                              <1> 	;In:  Connected: Module connected
+   228                              <1> 	.Module	equ	4
+   229                              <1> 	;Out: Caller(Process), 0 otherwise
+   230                              <1> 	.Caller	equ	4
+   231                              <1> 		
+   232                              <1> 	.TSS		equ	6	;TSS to call/be called
+   233                              <1> 	.end		equ	8	;end/Size of entry
+   234                              <1> 	
+   235                              <1> %if module_struc.InterfaceEntSize != interface_struc.end
+   236                              <1> 	%error 'Interface size wrong'
+   237                              <1> %endif
+   238                              <1> 	
+   239                              <1> 	
+   240                              <1> ;==============================================================================
+   241                              <1> ;Process/Interface (TSS)
+   242                              <1> task_struc:
+   243                              <1> 	.TSS		equ	0	;TSS Data
+   244                              <1> 	.Process	equ	100h	;Process/Interface Data	
+   245                              <1> 	.Float	equ	200h	;Float Data
+   246                              <1> 	.Stack	equ	400h	;Ring 0 Stack Data(descriptor in LDT)	
+   247                              <1> 	.StackSize equ pages - .Stack
+   248                              <1> 	;1000h	(next page)
+   249                              <1> 	
+   250                              <1> ;Process/Interface Data(100h bytes)
+   251                              <1> 	.Name	equ	.Process + 0	;Name
+   252                              <1> 	.Runtime	equ	.Process + 10h	;Runtime
+   253                              <1> 	.Forward	equ	.Process + 18h	;Forward link(interface called)
+   254                              <1> 
+   255                              <1> ;==============================================================================
+   256                              <1> ;TSS/Data Descriptor:
+   257                              <1> ;Available bit:
+   258                              <1> 	;0 process(ordinary)
+   259                              <1> 	;1 interface Task/Data - only removed by interface kernel code
+   260                              <1> 		
+   261                              <1> 
+   262                              <1> ;==============================================================================
+   263                              <1> ;Paging Structures
+   264                              <1> 
+   265                              <1> Paging:
+   266                              <1> %define	Paging_Base	equ	[System.lin_FPT]		;dword with pointer to start of FPT
+   267                              <1> %define	Paging_Size	equ	[System.lin_FPT_Size]
+   268                              <1> 
+   269                              <1> 	
+   270                                  %include 'macro.asm'
+   271                              <1> %macro new_Page 1
+   272                              <1> 	push	eax
+   273                              <1> 	call	check_edi
+   274                              <1> 	pop	eax
+   275                              <1> 	pusha
+   276                              <1> 	mov	eax, %1
+   277                              <1> 	shl	eax, 12
+   278                              <1> 	call	PD_add_Page
+   279                              <1> 	popa
+   280                              <1> %endmacro
+   281                              <1> 
+   282                              <1> %macro new_user_Page 1
+   283                              <1> 	push	eax
+   284                              <1> 	call	check_edi
+   285                              <1> 	pop	eax
+   286                              <1> 	pusha
+   287                              <1> 	mov	eax, %1
+   288                              <1> 	shl	eax, 12
+   289                              <1> 	or	edi, 0111b
+   290                              <1> 	call	PD_add_Page
+   291                              <1> 	popa
+   292                              <1> %endmacro
+   293                              <1> 
+   294                              <1> %macro pt_fill 1
+   295                              <1>     mov  eax, %1
+   296                              <1>     rep  stosd
+   297                              <1> %endmacro
+   298                              <1> 
+   299                              <1> %macro put 0
+   300                              <1>     stosd
+   301                              <1>     dec	ecx
+   302                              <1> %endmacro
+   303                              <1> 
+   304                              <1> %macro put_fill 3
+   305                              <1>     ;Copy %1 bytes from %2 to edi
+   306                              <1>     ;Fill up to %3 bytes with zeros
+   307                              <1>     mov  ecx, (%1)/4
+   308                              <1>     mov  esi, %2
+   309                              <1>     rep  movsd
+   310                              <1>     
+   311                              <1>     %if ((%3)/4 - (%1)/4) > 0
+   312                              <1>          mov  ecx, ((%3) - (%1))/4
+   313                              <1>          mov  eax, 0
+   314                              <1>          rep  stosd
+   315                              <1>     %endif
+   316                              <1> %endmacro
+   317                              <1> 
+   318                              <1> 
+   319                              <1> ;Descriptors, ONLY to be used in mem_gdt.asm and mem_idt.asm
+   320                              <1> 
+   321                              <1> %macro DataDesc 3
+   322                              <1> ;Base(pages), Limit(pages), Settings
+   323                              <1> ;Settings-Data = "PDp10EWA" Present Dpl Expand-down Writeable Accessed
+   324                              <1> ;Settings-Code = "PDp11CRA" Present Dpl Conforming Readable Accessed
+   325                              <1>     mov  eax, ((%1 << 12) & 0FFFFh) << 10h | ((%2) & 0FFFFh)
+   326                              <1>     put
+   327                              <1>     mov  eax, ((((%1 << 12) >> 10h) & 0FF00h) | 0C0h | ((%2 >> 10h) & 0Fh)) << 10h | (((%1 << 12) >> 10h) & 0FFh) | ((%3 & 0FFh) << 8)
+   328                              <1>     put
+   329                              <1> %endmacro
+   330                              <1> 
+   331                              <1> %macro GateDesc 3
+   332                              <1> ;Selector, Offset, Settings
+   333                              <1> ;Settings-Data = "PDp0Type" Present Dpl Type
+   334                              <1> ;Type: 1100=Call gate, 1110=Interrupt, 1111=Trap gate
+   335                              <1>     mov  eax, (%1 & 0FFFFh) << 10h | (%2 & 0FFFFh)
+   336                              <1>     put
+   337                              <1>     mov  eax, (%2 & 0FFFF0000h) | ((%3 & 0FFh) << 8)
+   338                              <1>     put
+   339                              <1> %endmacro
+   340                              <1> 
+   341                              <1> %macro TSSDesc 3
+   342                              <1> ;Base(bytes), Limit(bytes), Settings
+   343                              <1> ;Settings-Data = "PDp010B1" Present Dpl Busy
+   344                              <1>     mov  eax, ((%1) & 0FFFFh) << 10h | ((%2) & 0FFFFh)
+   345                              <1>     put
+   346                              <1>     mov  eax, ((((%1) >> 10h) & 0FF00h) | 0C0h | (((%2) >> 10h) & 0Fh)) << 10h | ((%1 >> 10h) & 0FFh) | ((%3 & 0FFh) << 8)
+   347                              <1>     put
+   348                              <1> %endmacro
+   349                                  %include 'gdt.inc'
+   350                              <1> ; gdt.inc   symbols and macros for building descriptors
+   351                              <1> ; Version 2.3, Mar 16, 1998
+   352                              <1> ; Sample code
+   353                              <1> ; by John S. Fine  johnfine@erols.com
+   354                              <1> ; I do not place any restrictions on your use of this source code
+   355                              <1> ; I do not provide any warranty of the correctness of this source code
+   356                              <1> ;_____________________________________________________________________________
+   357                              <1> ;
+   358                              <1> ;  This gdt.inc uses features that I added to NASM.
+   359                              <1> ;  As I write this, the only version of NASM with those features is available
+   360                              <1> ;  on my web page.
+   361                              <1> ;  http://www.erols.com/johnfine/#nasmj
+   362                              <1> ;
+   363                              <1> ;  This gdt.inc will also assemble correctly with standard NASM version 0.97
+   364                              <1> ;  (It tests for a feature I added to NASM and does things a different way
+   365                              <1> ;   if that feature is missing).  However, using standard NASM 0.97 every
+   366                              <1> ;  use of the desc macro inside the gdt must define a selector.  With my
+   367                              <1> ;  NASM, selectors may be defined or skipped on each use of desc.
+   368                              <1> ;_____________________________________________________________________________
+   369                              <1> ;
+   370                              <1> ; The desc macro pieces together a segment descriptor.
+   371                              <1> ;
+   372                              <1> ; desc  offset, selector, control   ;For gate descriptors
+   373                              <1> ; desc  base, limit, control	    ;For all other descriptors
+   374                              <1> ;
+   375                              <1> ;  base    is the full 32 bit base address of the segment
+   376                              <1> ;  limit   is one less than the segment length in 1 or 4K byte units
+   377                              <1> ;  control the sum of all the "D_" equates which apply (for call gates, you
+   378                              <1> ;          also add the "parameter dword count" to flags).
+   379                              <1> ;
+   380                              <1> ;  Descriptors are built in a simplified format at assembly time, and a
+   381                              <1> ;  special symbol is defined to tell JLOC to convert to correct format.
+   382                              <1> ;  See notes below.
+   383                              <1> ;
+   384                              <1> ;  There is special handling for any label that occurs on the line with
+   385                              <1> ;  the desc macro, for example:
+   386                              <1> ;
+   387                              <1> ;  flat_code:  desc  0, 0xFFFFF, D_CODE + D_READ + D_BIG + D_BIG_LIM
+   388                              <1> ;
+   389                              <1> ;  This defines a standard flat code segment with a base of zero.  The
+   390                              <1> ;  symbol flat_code is defined as the selector for this descriptor, not
+   391                              <1> ;  the address of the descriptor.  Thus you could do:
+   392                              <1> ;
+   393                              <1> ;  jmp  flat_code:entry_point
+   394                              <1> ;
+   395                              <1> ;  or define an IDT entry point as:
+   396                              <1> ;
+   397                              <1> ;  desc  service_GPF, flat_code, D_TRAP
+   398                              <1> ;
+   399                              <1> ;  The support for defining the selectors must be set up by using something
+   400                              <1> ;  like the start_gdt macro.
+   401                              <1> ;
+   402                              <1> ;  The start_gdt macro also fills in the null descriptor with a special
+   403                              <1> ;  descriptor that can be used by the lgdt instruction.
+   404                              <1> ;
+   405                              <1> ;  The end_gdt macro defines the limit value needed by start_gdt and also
+   406                              <1> ;  releases the NASM context used for defining selectors
+   407                              <1> ;_____________________________________________________________________________
+   408                              <1> 
+   409                              <1> ;Each descriptor should have exactly one of next 8 codes to define the type of
+   410                              <1> ;descriptor
+   411                              <1> D_LDT		EQU	 200h	;LDT segment
+   412                              <1> D_TASK		EQU	 500h	;Task gate
+   413                              <1> D_TSS		EQU	 900h	;TSS
+   414                              <1> D_CALL		EQU	0C00h	;386 call gate
+   415                              <1> D_INT		EQU	0E00h	;386 interrupt gate
+   416                              <1> D_TRAP		EQU	0F00h	;386 trap gate
+   417                              <1> D_DATA		EQU	1000h	;Data segment
+   418                              <1> D_CODE		EQU	1800h	;Code segment
+   419                              <1> 
+   420                              <1> ;Descriptors may include the following as appropriate:
+   421                              <1> D_DPL3		EQU	6000h	;DPL3 or mask for DPL
+   422                              <1> D_DPL2		EQU	4000h
+   423                              <1> D_DPL1		EQU	2000h
+   424                              <1> D_DPL0		EQU	0000h
+   425                              <1> D_PRESENT	EQU	8000h	;Present
+   426                              <1> D_NOT_PRESENT	EQU	8000h	;Not Present
+   427                              <1> 				;Note, the PRESENT bit is set by default
+   428                              <1> 				;Include NOT_PRESENT to turn it off
+   429                              <1> 				;Do not specify D_PRESENT
+   430                              <1> 
+   431                              <1> ;Segment descriptors (not gates) may include:
+   432                              <1> D_ACC		EQU	 100h	;Accessed (Data or Code)
+   433                              <1> 
+   434                              <1> D_WRITE		EQU	 200h	;Writable (Data segments only)
+   435                              <1> D_READ		EQU	 200h	;Readable (Code segments only)
+   436                              <1> D_BUSY		EQU	 200h	;Busy (TSS only)
+   437                              <1> 
+   438                              <1> D_EXDOWN	EQU	 400h	;Expand down (Data segments only)
+   439                              <1> D_CONFORM	EQU	 400h	;Conforming (Code segments only)
+   440                              <1> 
+   441                              <1> D_BIG		EQU	  40h	;Default to 32 bit mode (USE32)
+   442                              <1> D_BIG_LIM	EQU	  80h	;Limit is in 4K units
+   443                              <1> 
+   444                              <1> %macro test_for_my_00_feature 0
+   445                              <1> %ifnnum	%00
+   446                              <1> %define my_00_feature
+   447                              <1> %endif
+   448                              <1> %endm
+   449                              <1> test_for_my_00_feature
+   450                              <2> %ifnnum 
+   451                              <2> %define my_00_feature
+   452                              <2> %endif
+   453                              <1> 
+   454                              <1> ;  NASM version 0.97 has some bugs in putting %macro definitions inside %if
+   455                              <1> ;  constructs.  I sidestep that problem by putting the %macro definitions in
+   456                              <1> ;  %include files.
+   457                              <1> ;_____________________________________________________________________________
+   458                              <1> 
+   459                              <1> %ifdef my_00_feature
+   460                              <1> 
+   461                              <1> %include "gdt_new.inc"
+   462                              <2> ; gdt_new.inc   symbols and macros for building descriptors
+   463                              <2> ; Version 2.3, Mar 16, 1998
+   464                              <2> ; Sample code
+   465                              <2> ; by John S. Fine  johnfine@erols.com
+   466                              <2> ; I do not place any restrictions on your use of this source code
+   467                              <2> ; I do not provide any warranty of the correctness of this source code
+   468                              <2> ;_____________________________________________________________________________
+   469                              <2> ;
+   470                              <2> ;  Use gdt.inc to include this file.
+   471                              <2> ;  This section was split out of gdt.inc because of a bug in NASM version
+   472                              <2> ;  0.97 handling of macro definitions within an %if.
+   473                              <2> ;
+   474                              <2> ;  This varient of the macro definitions is used if my %00 feature is present
+   475                              <2> ;  in NASM
+   476                              <2> ;_____________________________________________________________________________
+   477                              <2> 
+   478                              <2> %macro start_gdt 0
+   479                              <2> %push table
+   480                              <2> %$startoftable:
+   481                              <2> 	dw	%$limitoftable
+   482                              <2> 	dd	%$startoftable
+   483                              <2> 	dw	0
+   484                              <2> %endmacro
+   485                              <2> 
+   486                              <2> %macro end_gdt 0
+   487                              <2> %$limitoftable	equ	$-%$startoftable-1
+   488                              <2> %pop
+   489                              <2> %endmacro
+   490                              <2> 
+   491                              <2> %macro desc 3
+   492                              <2> %ifid %00
+   493                              <2> %00 equ $-%$startoftable
+   494                              <2> %endif
+   495                              <2> 	GLOBAL	?fixD%%jloc
+   496                              <2> ?fixD%%jloc:
+   497                              <2> 	dd	(%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   498                              <2> %endmacro
+   499                              <2> 
+   500                              <1> 
+   501                              <1> %else
+   502                              <1> 
+   503                              <1> %include "gdt_old.inc"
+   504                              <1> 
+   505                              <1> %endif
+   506                              <1> ;-----------------------------------------------------------------------------
+   507                              <1> ;  Note:
+   508                              <1> ;
+   509                              <1> ;  In true descriptors the offset, base and limit fields are each broken into
+   510                              <1> ;  two parts.  It is often useful to define descriptors for which these fields
+   511                              <1> ;  (especially offset) are not known until link time.  Since the assembler
+   512                              <1> ;  doesn't know the final value, it can't split the fields correctly.
+   513                              <1> ;
+   514                              <1> ;  To work around this problem, I have the desc macro store the parts of each
+   515                              <1> ;  descriptor as contiguous fields, rather than in the correct Intel sequence.
+   516                              <1> ;  The assembler can use standard "fixup" requests to indicate any values that
+   517                              <1> ;  are not known at assembly time.  You must link with JLOC.  After applying
+   518                              <1> ;  the fixups, JLOC will rearrange the descriptor into the correct sequence
+   519                              <1> ;
+   520                              <1> ;  There are two basic formats for descriptors, one for gates, one for
+   521                              <1> ;  everything else.
+   522                              <1> ;
+   523                              <1> ;  A gate is identified by JLOC as any descriptor whose simplified format has
+   524                              <1> ;  bit 26 set and bit 28 clear.
+   525                              <1> ;
+   526                              <1> ;  For a gate, the following rearrangement occurs:
+   527                              <1> ;
+   528                              <1> ;  subField             Simplified location   Final location
+   529                              <1> ;  ------------------   -------------------   --------------
+   530                              <1> ;  Selector[0..15]            0..15               16..31
+   531                              <1> ;  Minor control bits        16..23               32..39
+   532                              <1> ;  Major control bits        24..31               40..47
+   533                              <1> ;  Offset[0..15]             32..47                0..15
+   534                              <1> ;  Offset[16..31]            48..63               48..63
+   535                              <1> ;
+   536                              <1> ;  For non-gates the following rearrangement occurs:
+   537                              <1> ;
+   538                              <1> ;  subField             Simplified location   Final location
+   539                              <1> ;  ------------------   -------------------   --------------
+   540                              <1> ;  Limit[0..15]               0..15                0..15
+   541                              <1> ;  Limit[16..19]             16..19               48..51
+   542                              <1> ;  Minor control bits        20..23               52..57
+   543                              <1> ;  Major control bits        24..31               40..47
+   544                              <1> ;  Base[0..23]               32..55               16..39
+   545                              <1> ;  Base[24..31]              56..63               56..63
+   546                              <1> ;
+   547                              <1> ;  The last parameter to the desc macro contains all the control bits
+   548                              <1> ;  combined.  It is generated by adding together the appropriate
+   549                              <1> ;  D_ constants.  For all descriptors, it has the major control bits in D_
+   550                              <1> ;  bits 8 to 15.  The minor control bits are in either D_ bits 0 to 7 or bits
+   551                              <1> ;  4 to 7 depending on the type of descriptor.
+   552                              <1> ;_____________________________________________________________________________
+   553                              <1> 
+   554                                  
+   555                                  [BITS 32]
+   556                                  
+   557                                  SEGMENT Loader
+   558                                  
+   559                                  start:
+   560                                  	;bx = nanos.dat segment
+   561 00000000 C1E304                  	shl	ebx, 4
+   562 00000003 81E3FFFF0F00            	and	ebx, 000FFFFFh
+   563 00000009 53                      	push	ebx	;ebx = nanos.dat
+   564                                  	
+   565                                  		;Initiate RS232/VGA interface
+   566                                  		%include 'rs232vga.asm'
+   567                              <1> ;
+   568                              <1> ;RS232 Interface macros
+   569                              <1> ;To be used for debugging
+   570                              <1> ;
+   571                              <1> ;Written by Peter Hultqvist, peter.hultqvist@neocoder.net
+   572                              <1> ;
+   573                              <1> 
+   574                              <1> ;Port Base Addresses*
+   575                              <1> ;Port1	3F8h
+   576                              <1> ;Port2	2F8h
+   577                              <1> ;Port3	3E8h
+   578                              <1> ;Port4	2E8h
+   579                              <1> ;
+   580                              <1> ;	*Base addresses may be different on different computers
+   581                              <1> RS232:
+   582                              <1> 
+   583                              <1> RS232_Base	equ	3F8h
+   584                              <1> 
+   585                              <1> ;DLAB=0
+   586                              <1> RS232_Data	equ	0
+   587                              <1> RS232_Interrupt_Enable	equ	1
+   588                              <1> RS232_Interrupt_ID	equ	2
+   589                              <1> RS232_FIFO_Control	equ	2
+   590                              <1> 
+   591                              <1> ;DLAB=1
+   592                              <1> RS232_DivisorLSB	equ	0
+   593                              <1> RS232_DivisorMSB	equ	1
+   594                              <1> RS232_Alternate_Function	equ	2
+   595                              <1> 
+   596                              <1> RS232_Line_Control	equ	3
+   597                              <1> RS232_Modem_Control	equ	4
+   598                              <1> RS232_Line_Status	equ	5
+   599                              <1> RS232_Modem_Status	equ	6
+   600                              <1> RS232_Scratch_Pad	equ	7
+   601                              <1> 
+   602                              <1> ;Init code
+   603 0000000A 60                  <1> pusha
+   604                              <1> 	;Initiate RS232
+   605                              <1> 		;Set DLAB = 0
+   606 0000000B 66BAFB03            <1> 		mov	dx, RS232_Base + RS232_Line_Control
+   607 0000000F B000                <1> 		mov	al, 0
+   608 00000011 EE                  <1> 		out	dx, al
+   609                              <1> 
+   610                              <1> 		;Disable Interrupts
+   611 00000012 66BAF903            <1> 		mov	dx, RS232_Base + RS232_Interrupt_Enable
+   612 00000016 B000                <1> 		mov	al, 0
+   613 00000018 EE                  <1> 		out	dx, al
+   614                              <1> 
+   615                              <1> 		;Set DLAB = 1
+   616 00000019 66BAFB03            <1> 		mov	dx, RS232_Base + RS232_Line_Control
+   617 0000001D B080                <1> 		mov	al, 80h
+   618 0000001F EE                  <1> 		out	dx, al
+   619                              <1> 		
+   620                              <1> 		;Set Baud Rate
+   621 00000020 66BAF803            <1> 		mov	dx, RS232_Base + RS232_DivisorLSB
+   622 00000024 B00C                <1> 		mov	al, 0Ch	;9600 kbps
+   623 00000026 EE                  <1> 		out	dx, al
+   624 00000027 6642                <1> 		inc	dx
+   625 00000029 B000                <1> 		mov	al, 0
+   626 0000002B EE                  <1> 		out	dx, al
+   627                              <1> 
+   628                              <1> 		;Set DLAB = 0, + Line Control
+   629 0000002C 66BAFB03            <1> 		mov	dx, RS232_Base + RS232_Line_Control
+   630 00000030 B003                <1> 		mov	al, 3	;8 bits, no parity, 1 stop
+   631 00000032 EE                  <1> 		out	dx, al
+   632                              <1> 		
+   633                              <1> 		;Disable FIFO
+   634 00000033 66BAFA03            <1> 		mov	dx, RS232_Base + RS232_FIFO_Control
+   635 00000037 B000                <1> 		mov	al, 0
+   636 00000039 EE                  <1> 		out	dx, al
+   637                              <1> 	
+   638                              <1> 	;Initiate VGA
+   639 0000003A BF00800B00          <1> 		mov	edi, 0B8000h
+   640 0000003F BEA0800B00          <1> 		mov	esi, 0B8000h + 2*80
+   641 00000044 B9C0030000          <1> 		mov	ecx, 2*80*24 / 4
+   642 00000049 F3A5                <1> 		rep	movsd	;scroll one row
+   643                              <1> 		
+   644 0000004B B8200E200E          <1> 		mov	eax, 0E200E20h ;color' 'color' '
+   645 00000050 B950000000          <1> 		mov	ecx, 2*80*2 / 4
+   646 00000055 F3AB                <1> 		rep	stosd	;clear bottom row + one more row
+   647 00000057 61                  <1> 	popa
+   648                              <1> 
+   649 00000058 E9EF000000          <1> 	jmp	.end
+   650                              <1> 
+   651                              <1> %macro Print 1
+   652                              <1> 	pusha
+   653                              <1> 	mov	edx, %1
+   654                              <1> 	call RS232.Print
+   655                              <1> 	popa
+   656                              <1> %endmacro
+   657                              <1> 
+   658                              <1> .Print:
+   659                              <1> 	.print_loop:
+   660 0000005D 8A02                <1> 	mov	al, [edx]
+   661 0000005F 3C00                <1> 	cmp	al, 0
+   662 00000061 7408                <1> 	je	.print_done
+   663 00000063 E808000000          <1> 	call	.PrintByte
+   664 00000068 42                  <1> 	inc	edx
+   665 00000069 EBF2                <1> 	jmp	.print_loop
+   666                              <1> 	
+   667                              <1> 	.print_done
+   668 0000006B C3                  <1> 	ret
+   669                              <1> 
+   670                              <1> 	
+   671 0000006C 00000000            <1> .cur:	dd 0
+   672                              <1> 
+   673                              <1> %macro PrintByte 1
+   674                              <1> 	pusha
+   675                              <1> 	mov	al, %1
+   676                              <1> 	call RS232.PrintByte
+   677                              <1> 	popa
+   678                              <1> %endmacro
+   679                              <1> 
+   680                              <1> .PrintByte:
+   681 00000070 60                  <1> 	pusha
+   682                              <1> 	;al = byte to send/print
+   683                              <1> 	;RS232
+   684 00000071 88C4                <1> 		mov	ah, al
+   685                              <1> 		;test if ready to send
+   686 00000073 66BAFD03            <1> 		mov	dx, RS232_Base + RS232_Line_Status
+   687 00000077 66B9FFFF            <1> 		mov	cx, 0FFFFh
+   688                              <1> 		.ready_to_send:
+   689 0000007B EC                  <1> 			in	al, dx
+   690 0000007C 660FBAE005          <1> 			bt	ax, 5
+   691 00000081 7202                <1> 			jc	.ready
+   692 00000083 E2F6                <1> 		loop	.ready_to_send
+   693                              <1> 		
+   694                              <1> 		.ready
+   695                              <1> 		;send byte
+   696 00000085 88E0                <1> 		mov	al, ah
+   697 00000087 66BAF803            <1> 		mov	dx, RS232_Base + RS232_Data
+   698 0000008B EE                  <1> 		out	dx, al
+   699                              <1> 		
+   700                              <1> 	;VGA	
+   701 0000008C 3C0A                <1> 		cmp	al, 10	;new line
+   702 0000008E 750A                <1> 		jne	.vga_print
+   703 00000090 E836000000          <1> 			call	.scroll
+   704 00000095 E92A000000          <1> 			jmp	.over
+   705                              <1> 		.vga_print:
+   706                              <1> 		
+   707 0000009A BB008F0B00          <1> 		mov	ebx, 0B8000h + 2*80*24
+   708 0000009F 031D[6C000000]      <1> 		add	ebx, [RS232.cur]
+   709                              <1> 
+   710 000000A5 8803                <1> 		mov	[ebx], al
+   711 000000A7 81C302000000        <1> 		add	ebx, 2
+   712 000000AD 8105[6C000000]0200- <1> 		add dword [RS232.cur], 2
+   713 000000B5 0000                <1>
+   714 000000B7 81FBA08F0B00        <1> 		cmp	ebx, 0B8000h + 2*80*25
+   715 000000BD 7205                <1> 		jb	.over
+   716 000000BF E807000000          <1> 		call	.scroll
+   717                              <1> 		.over:
+   718 000000C4 E85E000000          <1> 		call	.set_cursor
+   719 000000C9 61                  <1> 	popa
+   720 000000CA C3                  <1> 	ret
+   721                              <1> 
+   722                              <1> 	.scroll:
+   723 000000CB BF00800B00          <1> 		mov	edi, 0B8000h
+   724 000000D0 BEA0800B00          <1> 		mov	esi, 0B8000h + 2*80
+   725 000000D5 B9E8030000          <1> 		mov	ecx, 2*80*25 / 4
+   726 000000DA F3A5                <1> 		rep	movsd	;scroll one row
+   727 000000DC C705[6C000000]0000- <1> 		mov	dword [RS232.cur], 0
+   728 000000E4 0000                <1>
+   729                              <1> 		
+   730 000000E6 E83C000000          <1> 		call	.set_cursor
+   731 000000EB C3                  <1> 	ret
+   732                              <1> 
+   733                              <1> %macro PrintHex 2
+   734                              <1> 	pusha
+   735                              <1> 	mov	eax, %1	
+   736                              <1> 	mov	ecx, %2
+   737                              <1> 	call RS232.PrintHex
+   738                              <1> 	popa
+   739                              <1> %endmacro
+   740                              <1> 
+   741                              <1> .PrintHex:
+   742                              <1> 	;Print a number in hex
+   743                              <1> 	;in:	eax = number to be written
+   744                              <1> 	;	ecx = number of nibbles(hex number)(1 to 8)
+   745                              <1> 	
+   746 000000EC 89C2                <1> 	mov	edx, eax
+   747                              <1> 	
+   748 000000EE C1E102              <1> 	shl	ecx, 2
+   749 000000F1 D3CA                <1> 	ror	edx, cl
+   750 000000F3 C1E902              <1> 	shr	ecx, 2
+   751                              <1> 	
+   752                              <1> 	
+   753                              <1> 		
+   754                              <1> 	.hex_loop:
+   755 000000F6 C1C204              <1> 		rol	edx, 4
+   756                              <1> 	
+   757 000000F9 88D0                <1> 		mov	al, dl
+   758 000000FB 240F                <1> 		and	al, 0Fh
+   759                              <1> 
+   760 000000FD 3C0A                <1> 		cmp	al, 10
+   761 000000FF 0F92C4              <1> 		setb	ah
+   762 00000102 FECC                <1> 		dec	ah
+   763 00000104 80E407              <1> 		and	ah, 'A'-'0' -10		
+   764 00000107 80C430              <1> 		add	ah, '0'
+   765 0000010A 00E0                <1> 		add	al, ah
+   766 0000010C E85FFFFFFF          <1> 		call	.PrintByte
+   767                              <1> 		
+   768 00000111 E2E3                <1> 		loop	.hex_loop
+   769 00000113 C3                  <1> 	ret
+   770                              <1> 	
+   771                              <1> 	
+   772                              <1> %macro PrintBin 2
+   773                              <1> 	pusha
+   774                              <1> 	mov	eax, %1	
+   775                              <1> 	mov	ecx, %2
+   776                              <1> 	call RS232.PrintBin
+   777                              <1> 	popa
+   778                              <1> %endmacro
+   779                              <1> 	
+   780                              <1> .PrintBin:
+   781                              <1> 	;Print a number in binary
+   782                              <1> 	;in:	eax = number to be written
+   783                              <1> 	;	ecx = number of bits(1 to 32)
+   784 00000114 89C2                <1> 	mov	edx, eax
+   785 00000116 D3CA                <1> 	ror	edx, cl
+   786                              <1> 	
+   787                              <1> 	.bin_loop:
+   788 00000118 D1D2                <1> 		rcl	edx, 1	
+   789                              <1> 		
+   790 0000011A 0F92C0              <1> 		setc	al
+   791 0000011D 0430                <1> 		add	al, '0'
+   792 0000011F E84CFFFFFF          <1> 		call	.PrintByte
+   793                              <1> 		
+   794 00000124 E2F2                <1> 		loop	.bin_loop
+   795                              <1> 	
+   796 00000126 C3                  <1> 	ret
+   797                              <1> 
+   798                              <1> .set_cursor:
+   799                              <1> 	;moves the cursor to Screen.cursor
+   800 00000127 8B1D[6C000000]      <1> 	mov	ebx, [RS232.cur]
+   801 0000012D D1EB                <1> 	shr	ebx, 1
+   802 0000012F 81C380070000        <1> 	add	ebx, 80*24
+   803                              <1> 	
+   804 00000135 66BAD403            <1> 	mov	dx, 	03D4h	;Address
+   805 00000139 B00F                <1> 	mov	al,  0Fh		;low register
+   806 0000013B EE                  <1> 	out	dx,	al
+   807 0000013C 6642                <1> 	inc	dx
+   808 0000013E 88D8                <1> 	mov	al,	bl
+   809 00000140 EE                  <1> 	out	dx,	al
+   810                              <1> 	
+   811 00000141 664A                <1> 	dec	dx
+   812 00000143 B00E                <1> 	mov	al,	0Eh		;high register
+   813 00000145 EE                  <1> 	out	dx,	al
+   814 00000146 6642                <1> 	inc	dx
+   815 00000148 88F8                <1> 	mov	al,	bh
+   816 0000014A EE                  <1> 	out	dx,	al
+   817                              <1> 
+   818 0000014B C3                  <1> 	ret
+   819                              <1> .end:
+   820                              <1> 
+   821                              <1> 
+   822                              <1> %macro getPos 1
+   823                              <1> 	mov	%1, dword [RS232.cur]
+   824                              <1> %endmacro
+   825                              <1> 
+   826                              <1> %macro setPos 1
+   827                              <1> 	mov	dword [RS232.cur], %1
+   828                              <1> %endmacro
+   829                                  		
+   830                                  		;Welcome message
+   831                                  		Print Welcome	
+   832 0000014C 60                  <1>  pusha
+   833 0000014D BA[CD0A0000]        <1>  mov edx, %1
+   834 00000152 E806FFFFFF          <1>  call RS232.Print
+   835 00000157 61                  <1>  popa
+   836                                  
+   837                                  		;Determine size of RAM above 1MB	
+   838                                  		Print RAMSize
+   839 00000158 60                  <1>  pusha
+   840 00000159 BA[1A0B0000]        <1>  mov edx, %1
+   841 0000015E E8FAFEFFFF          <1>  call RS232.Print
+   842 00000163 61                  <1>  popa
+   843                                  		
+   844                                  		;"Zero" RAM
+   845 00000164 BB78563412              		mov	ebx,  12345678h
+   846 00000169 BA000000E0              		mov	edx, 0e0000000h
+   847 0000016E B900100000              		mov	ecx, 1000h	;max tries
+   848                                  		.zero:
+   849 00000173 891A                    		mov	[edx], ebx
+   850 00000175 81C200001000            		add	edx, 100000h
+   851 0000017B E2F6                    		loop	.zero
+   852                                  
+   853                                  		;Check RAM
+   854 0000017D BA00000000              		mov	edx, 0
+   855 00000182 B85A5A5A5A              		mov	eax, 5A5A5A5Ah	;test dword
+   856                                  		
+   857 00000187 B900100000              		mov	ecx, 1000h	;max tries
+   858                                  		.test:
+   859                                  			;test memory
+   860 0000018C 391A                    			cmp	[edx], ebx
+   861 0000018E 7518                    			jne	.eom
+   862 00000190 8902                    			mov	[edx], eax
+   863 00000192 3902                    			cmp	[edx], eax
+   864 00000194 7512                    			jne	.eom
+   865 00000196 F7D0                    			not	eax
+   866 00000198 8902                    			mov	[edx], eax
+   867 0000019A 3902                    			cmp	[edx], eax
+   868 0000019C 750A                    			jne	.eom
+   869 0000019E F7D0                    			not	eax
+   870                                  			;Continue
+   871 000001A0 81C200001000            			add	edx, 100000h	;1MB steps
+   872 000001A6 E2E4                    		loop	.test
+   873                                  
+   874                                  		.eom:
+   875                                  		PrintHex edx, 8
+   876 000001A8 60                  <1>  pusha
+   877 000001A9 89D0                <1>  mov eax, %1
+   878 000001AB B908000000          <1>  mov ecx, %2
+   879 000001B0 E837FFFFFF          <1>  call RS232.PrintHex
+   880 000001B5 61                  <1>  popa
+   881                                  		PrintByte 10	
+   882 000001B6 60                  <1>  pusha
+   883 000001B7 B00A                <1>  mov al, %1
+   884 000001B9 E8B2FEFFFF          <1>  call RS232.PrintByte
+   885 000001BE 61                  <1>  popa
+   886                                  		;edx = amount of memory in bytes
+   887 000001BF 891500000000            		mov	[Nanos_init.MemSize], edx
+   888                                  			
+   889                                  			
+   890                                  		;Fix pic
+   891                                  		%include 'pic.asm' ;IF cleared
+   892                              <1> ;%macro pause 0
+   893                              <1> ;    jmp short $+2
+   894                              <1> ;    jmp short $+2
+   895                              <1> ;%endmacro
+   896                              <1> 
+   897                              <1>               ;bit3: 0:edge(PS/2) 1:level(80x86) triggered mode (system)
+   898                              <1>     ICW1 equ 15h   ;must contain: 0001????b (sign for ICW1)
+   899                              <1>               ;vector address (?????xxx xxx=none)
+   900                              <1>     ICW2  equ IRQBase  ;ICW2 = 10000xxx (IRQ 0-7  INT 80h - 87h)
+   901                              <1>     ICW4  equ 01h  ;ICW4 = 1
+   902                              <1>     OCW1m equ 11111100b ;OCW1 = 11111111b (IMR(Mask)IRQ 0-7)  0:enable 1:disable
+   903                              <1>     OCW1s equ 11111111b ;OCW1 = 11111111b (IMR(Mask)IRQ 8-15)  0:enable 1:disable
+   904                              <1> 
+   905                              <1> ; reprogram 8259-compatible interrupt controllers to use INT 20h through
+   906                              <1> ; INT 2Fh for the 16 hardware interrupts. Code from Josh McDonald's OS/2000
+   907                              <1> ; <http://www.effect.net.au/os-dev/> and from Linux.
+   908 000001C5 FA                  <1>     cli
+   909 000001C6 B015                <1> 	mov al,ICW1		; put both 8259s in init mode
+   910 000001C8 E620                <1> 	out 0x20,al
+   911 000001CA E6A0                <1> 	out 0xA0,al
+   912 000001CC B020                <1> 	mov al,ICW2		; IRQ0-IRQ7 -> interrupts 0x20-0x27
+   913 000001CE E621                <1> 	out 0x21,al
+   914 000001D0 0408                <1> 	add al,8
+   915 000001D2 E6A1                <1> 	out 0xA1,al		; IRQ8-IRQ15 -> interrupts 0x28-0x2F
+   916 000001D4 B004                <1> 	mov al,4
+   917 000001D6 E621                <1> 	out 0x21,al
+   918 000001D8 B002                <1> 	mov al,2
+   919 000001DA E6A1                <1> 	out 0xA1,al
+   920 000001DC B001                <1> 	mov al,ICW4
+   921 000001DE E621                <1> 	out 0x21,al
+   922 000001E0 E6A1                <1> 	out 0xA1,al
+   923                              <1> ; enable IRQs at these chips [ints still disabled at CPU]
+   924 000001E2 B0FC                <1> 	mov al,OCW1m		; IRQ0 [timer]
+   925 000001E4 E621                <1> 	out 0x21,al
+   926 000001E6 B0FF                <1> 	mov al,OCW1s		; none
+   927 000001E8 E6A1                <1> 	out 0xA1,al
+   928                                  
+   929 000001EA 5B                      	pop	ebx	;ebx = nanos.dat	
+   930                                  
+   931                                  ;Move Data and make tables, edx = RAM size
+   932                                  %include 'movedata.asm'
+   933                              <1> ;Creates the memory structure in nanos
+   934                              <1> ;
+   935                              <1> ;edi points to 0 in the beginning(physical memory)
+   936                              <1> ;edi is increased by all parts and left for the next part to continue
+   937                              <1> ;call check_edi is to be called between every page
+   938                              <1> 
+   939                              <1> 
+   940 000001EB E9D3020000          <1> 	jmp  mem_data_over
+   941                              <1> 
+   942                              <1> %include 'mem_data.asm'
+   943                              <2> 
+   944                              <2> ;===================
+   945                              <2> mem_data_GDT:
+   946 000001F0 0000000000000000    <2>     dd   0, 0														;Null Descriptor
+   947                              <2>     desc service, kern_sel, D_CALL + D_DPL3 + 0					;Call Gate(Kernel Services) + copy 0 dword
+   948                              <3> %ifid 
+   949                              <3>  equ $-%$startoftable
+   950                              <3> %endif
+   951                              <3>  GLOBAL ?fixD%%jloc
+   952                              <3> ?fixD%%jloc:
+   953 000001F8 100000EC[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   954                              <2>     desc lin_kern << 12, size_kern-1, D_CODE + D_READ + D_BIG + D_BIG_LIM		;Kernel Code
+   955                              <3> %ifid 
+   956                              <3>  equ $-%$startoftable
+   957                              <3> %endif
+   958                              <3>  GLOBAL ?fixD%%jloc
+   959                              <3> ?fixD%%jloc:
+   960 00000200 [FFFFBF9A]00804100  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   961                              <2>     desc 0, 0FFFFFh, D_DATA + D_WRITE + D_BIG + D_BIG_LIM					;Data(all 4GB)
+   962                              <3> %ifid 
+   963                              <3>  equ $-%$startoftable
+   964                              <3> %endif
+   965                              <3>  GLOBAL ?fixD%%jloc
+   966                              <3> ?fixD%%jloc:
+   967 00000208 FFFFCF9200000000    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   968                              <2>     desc (lin_kern << 12) + Multitasking.tss, 68h - 1, D_TSS 				;Idle TSS
+   969                              <3> %ifid 
+   970                              <3>  equ $-%$startoftable
+   971                              <3> %endif
+   972                              <3>  GLOBAL ?fixD%%jloc
+   973                              <3> ?fixD%%jloc:
+   974 00000210 67000089[00804100]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   975                              <2>     desc (lin_Stack << 12), size_Stack - 1, D_DATA + D_WRITE + D_BIG + D_BIG_LIM		;Data, Stack
+   976                              <3> %ifid 
+   977                              <3>  equ $-%$startoftable
+   978                              <3> %endif
+   979                              <3>  GLOBAL ?fixD%%jloc
+   980                              <3> ?fixD%%jloc:
+   981 00000218 0000C09200404100    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   982                              <2>     desc (lin_Mod_LDT << 12) + module_struc.LDT, pages - module_struc.LDT - 1, D_LDT	;Mod LDT
+   983                              <3> %ifid 
+   984                              <3>  equ $-%$startoftable
+   985                              <3> %endif
+   986                              <3>  GLOBAL ?fixD%%jloc
+   987                              <3> ?fixD%%jloc:
+   988 00000220 FF0E008200614100    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   989                              <2>     desc (lin_Mod_TSS << 12) + task_struc.TSS, 68h - 1, D_TSS			;Mod TSS    
+   990                              <3> %ifid 
+   991                              <3>  equ $-%$startoftable
+   992                              <3> %endif
+   993                              <3>  GLOBAL ?fixD%%jloc
+   994                              <3> ?fixD%%jloc:
+   995 00000228 6700008900704100    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+   996                              <2> mem_data_GDT_size equ $-mem_data_GDT
+   997                              <2> 
+   998                              <2> ;===================
+   999                              <2> mem_data_IDT:
+  1000                              <2> 
+  1001                              <2> ;Interrupt 0-1F    - Processor Exceptions
+  1002                              <2>     desc Interrupt.exception00, kern_sel, D_INT + D_DPL0 + D_BIG
+  1003                              <3> %ifid 
+  1004                              <3>  equ $-%$startoftable
+  1005                              <3> %endif
+  1006                              <3>  GLOBAL ?fixD%%jloc
+  1007                              <3> ?fixD%%jloc:
+  1008 00000230 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1009                              <2>     desc Interrupt.exception01, kern_sel, D_INT + D_DPL0 + D_BIG
+  1010                              <3> %ifid 
+  1011                              <3>  equ $-%$startoftable
+  1012                              <3> %endif
+  1013                              <3>  GLOBAL ?fixD%%jloc
+  1014                              <3> ?fixD%%jloc:
+  1015 00000238 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1016                              <2>     desc Interrupt.exception02, kern_sel, D_INT + D_DPL0 + D_BIG
+  1017                              <3> %ifid 
+  1018                              <3>  equ $-%$startoftable
+  1019                              <3> %endif
+  1020                              <3>  GLOBAL ?fixD%%jloc
+  1021                              <3> ?fixD%%jloc:
+  1022 00000240 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1023                              <2>     desc Interrupt.exception03, kern_sel, D_INT + D_DPL0 + D_BIG
+  1024                              <3> %ifid 
+  1025                              <3>  equ $-%$startoftable
+  1026                              <3> %endif
+  1027                              <3>  GLOBAL ?fixD%%jloc
+  1028                              <3> ?fixD%%jloc:
+  1029 00000248 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1030                              <2>     desc Interrupt.exception04, kern_sel, D_INT + D_DPL0 + D_BIG
+  1031                              <3> %ifid 
+  1032                              <3>  equ $-%$startoftable
+  1033                              <3> %endif
+  1034                              <3>  GLOBAL ?fixD%%jloc
+  1035                              <3> ?fixD%%jloc:
+  1036 00000250 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1037                              <2>     desc Interrupt.exception05, kern_sel, D_INT + D_DPL0 + D_BIG
+  1038                              <3> %ifid 
+  1039                              <3>  equ $-%$startoftable
+  1040                              <3> %endif
+  1041                              <3>  GLOBAL ?fixD%%jloc
+  1042                              <3> ?fixD%%jloc:
+  1043 00000258 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1044                              <2>     desc Interrupt.exception06, kern_sel, D_INT + D_DPL0 + D_BIG
+  1045                              <3> %ifid 
+  1046                              <3>  equ $-%$startoftable
+  1047                              <3> %endif
+  1048                              <3>  GLOBAL ?fixD%%jloc
+  1049                              <3> ?fixD%%jloc:
+  1050 00000260 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1051                              <2>     desc Multitasking.device_not_available, kern_sel, D_INT + D_DPL0 + D_BIG
+  1052                              <3> %ifid 
+  1053                              <3>  equ $-%$startoftable
+  1054                              <3> %endif
+  1055                              <3>  GLOBAL ?fixD%%jloc
+  1056                              <3> ?fixD%%jloc:
+  1057 00000268 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1058                              <2>     
+  1059                              <2>     desc Interrupt.exception08, kern_sel, D_INT + D_DPL0 + D_BIG
+  1060                              <3> %ifid 
+  1061                              <3>  equ $-%$startoftable
+  1062                              <3> %endif
+  1063                              <3>  GLOBAL ?fixD%%jloc
+  1064                              <3> ?fixD%%jloc:
+  1065 00000270 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1066                              <2>     desc Interrupt.exception09, kern_sel, D_INT + D_DPL0 + D_BIG
+  1067                              <3> %ifid 
+  1068                              <3>  equ $-%$startoftable
+  1069                              <3> %endif
+  1070                              <3>  GLOBAL ?fixD%%jloc
+  1071                              <3> ?fixD%%jloc:
+  1072 00000278 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1073                              <2>     desc Interrupt.exception0A, kern_sel, D_INT + D_DPL0 + D_BIG
+  1074                              <3> %ifid 
+  1075                              <3>  equ $-%$startoftable
+  1076                              <3> %endif
+  1077                              <3>  GLOBAL ?fixD%%jloc
+  1078                              <3> ?fixD%%jloc:
+  1079 00000280 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1080                              <2>     desc Interrupt.exception0B, kern_sel, D_INT + D_DPL0 + D_BIG
+  1081                              <3> %ifid 
+  1082                              <3>  equ $-%$startoftable
+  1083                              <3> %endif
+  1084                              <3>  GLOBAL ?fixD%%jloc
+  1085                              <3> ?fixD%%jloc:
+  1086 00000288 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1087                              <2>     desc Interrupt.exception0C, kern_sel, D_INT + D_DPL0 + D_BIG
+  1088                              <3> %ifid 
+  1089                              <3>  equ $-%$startoftable
+  1090                              <3> %endif
+  1091                              <3>  GLOBAL ?fixD%%jloc
+  1092                              <3> ?fixD%%jloc:
+  1093 00000290 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1094                              <2>     desc Interrupt.exception0D, kern_sel, D_INT + D_DPL0 + D_BIG
+  1095                              <3> %ifid 
+  1096                              <3>  equ $-%$startoftable
+  1097                              <3> %endif
+  1098                              <3>  GLOBAL ?fixD%%jloc
+  1099                              <3> ?fixD%%jloc:
+  1100 00000298 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1101                              <2>     desc Interrupt.exception0E, kern_sel, D_INT + D_DPL0 + D_BIG
+  1102                              <3> %ifid 
+  1103                              <3>  equ $-%$startoftable
+  1104                              <3> %endif
+  1105                              <3>  GLOBAL ?fixD%%jloc
+  1106                              <3> ?fixD%%jloc:
+  1107 000002A0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1108                              <2>     desc Interrupt.exception0F, kern_sel, D_INT + D_DPL0 + D_BIG
+  1109                              <3> %ifid 
+  1110                              <3>  equ $-%$startoftable
+  1111                              <3> %endif
+  1112                              <3>  GLOBAL ?fixD%%jloc
+  1113                              <3> ?fixD%%jloc:
+  1114 000002A8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1115                              <2> 
+  1116                              <2>     desc Interrupt.exception10, kern_sel, D_INT + D_DPL0 + D_BIG
+  1117                              <3> %ifid 
+  1118                              <3>  equ $-%$startoftable
+  1119                              <3> %endif
+  1120                              <3>  GLOBAL ?fixD%%jloc
+  1121                              <3> ?fixD%%jloc:
+  1122 000002B0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1123                              <2>     desc Interrupt.exception11, kern_sel, D_INT + D_DPL0 + D_BIG
+  1124                              <3> %ifid 
+  1125                              <3>  equ $-%$startoftable
+  1126                              <3> %endif
+  1127                              <3>  GLOBAL ?fixD%%jloc
+  1128                              <3> ?fixD%%jloc:
+  1129 000002B8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1130                              <2>     desc Interrupt.exception12, kern_sel, D_INT + D_DPL0 + D_BIG
+  1131                              <3> %ifid 
+  1132                              <3>  equ $-%$startoftable
+  1133                              <3> %endif
+  1134                              <3>  GLOBAL ?fixD%%jloc
+  1135                              <3> ?fixD%%jloc:
+  1136 000002C0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1137                              <2>     desc Interrupt.exception13, kern_sel, D_INT + D_DPL0 + D_BIG
+  1138                              <3> %ifid 
+  1139                              <3>  equ $-%$startoftable
+  1140                              <3> %endif
+  1141                              <3>  GLOBAL ?fixD%%jloc
+  1142                              <3> ?fixD%%jloc:
+  1143 000002C8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1144                              <2>     desc Interrupt.exception14, kern_sel, D_INT + D_DPL0 + D_BIG
+  1145                              <3> %ifid 
+  1146                              <3>  equ $-%$startoftable
+  1147                              <3> %endif
+  1148                              <3>  GLOBAL ?fixD%%jloc
+  1149                              <3> ?fixD%%jloc:
+  1150 000002D0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1151                              <2>     desc Interrupt.exception15, kern_sel, D_INT + D_DPL0 + D_BIG
+  1152                              <3> %ifid 
+  1153                              <3>  equ $-%$startoftable
+  1154                              <3> %endif
+  1155                              <3>  GLOBAL ?fixD%%jloc
+  1156                              <3> ?fixD%%jloc:
+  1157 000002D8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1158                              <2>     desc Interrupt.exception16, kern_sel, D_INT + D_DPL0 + D_BIG
+  1159                              <3> %ifid 
+  1160                              <3>  equ $-%$startoftable
+  1161                              <3> %endif
+  1162                              <3>  GLOBAL ?fixD%%jloc
+  1163                              <3> ?fixD%%jloc:
+  1164 000002E0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1165                              <2>     desc Interrupt.exception17, kern_sel, D_INT + D_DPL0 + D_BIG
+  1166                              <3> %ifid 
+  1167                              <3>  equ $-%$startoftable
+  1168                              <3> %endif
+  1169                              <3>  GLOBAL ?fixD%%jloc
+  1170                              <3> ?fixD%%jloc:
+  1171 000002E8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1172                              <2> 
+  1173                              <2>     desc Interrupt.exception18, kern_sel, D_INT + D_DPL0 + D_BIG
+  1174                              <3> %ifid 
+  1175                              <3>  equ $-%$startoftable
+  1176                              <3> %endif
+  1177                              <3>  GLOBAL ?fixD%%jloc
+  1178                              <3> ?fixD%%jloc:
+  1179 000002F0 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1180                              <2>     desc Interrupt.exception19, kern_sel, D_INT + D_DPL0 + D_BIG
+  1181                              <3> %ifid 
+  1182                              <3>  equ $-%$startoftable
+  1183                              <3> %endif
+  1184                              <3>  GLOBAL ?fixD%%jloc
+  1185                              <3> ?fixD%%jloc:
+  1186 000002F8 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1187                              <2>     desc Interrupt.exception1A, kern_sel, D_INT + D_DPL0 + D_BIG
+  1188                              <3> %ifid 
+  1189                              <3>  equ $-%$startoftable
+  1190                              <3> %endif
+  1191                              <3>  GLOBAL ?fixD%%jloc
+  1192                              <3> ?fixD%%jloc:
+  1193 00000300 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1194                              <2>     desc Interrupt.exception1B, kern_sel, D_INT + D_DPL0 + D_BIG
+  1195                              <3> %ifid 
+  1196                              <3>  equ $-%$startoftable
+  1197                              <3> %endif
+  1198                              <3>  GLOBAL ?fixD%%jloc
+  1199                              <3> ?fixD%%jloc:
+  1200 00000308 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1201                              <2>     desc Interrupt.exception1C, kern_sel, D_INT + D_DPL0 + D_BIG
+  1202                              <3> %ifid 
+  1203                              <3>  equ $-%$startoftable
+  1204                              <3> %endif
+  1205                              <3>  GLOBAL ?fixD%%jloc
+  1206                              <3> ?fixD%%jloc:
+  1207 00000310 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1208                              <2>     desc Interrupt.exception1D, kern_sel, D_INT + D_DPL0 + D_BIG
+  1209                              <3> %ifid 
+  1210                              <3>  equ $-%$startoftable
+  1211                              <3> %endif
+  1212                              <3>  GLOBAL ?fixD%%jloc
+  1213                              <3> ?fixD%%jloc:
+  1214 00000318 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1215                              <2>     desc Interrupt.exception1E, kern_sel, D_INT + D_DPL0 + D_BIG
+  1216                              <3> %ifid 
+  1217                              <3>  equ $-%$startoftable
+  1218                              <3> %endif
+  1219                              <3>  GLOBAL ?fixD%%jloc
+  1220                              <3> ?fixD%%jloc:
+  1221 00000320 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1222                              <2>     desc Interrupt.exception1F, kern_sel, D_INT + D_DPL0 + D_BIG
+  1223                              <3> %ifid 
+  1224                              <3>  equ $-%$startoftable
+  1225                              <3> %endif
+  1226                              <3>  GLOBAL ?fixD%%jloc
+  1227                              <3> ?fixD%%jloc:
+  1228 00000328 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1229                              <2> 
+  1230                              <2> ;Interrupt 20-2F   - IRQ 0-F
+  1231                              <2> 
+  1232                              <2>     desc Multitasking.interrupt, kern_sel, D_INT + D_DPL0 + D_BIG
+  1233                              <3> %ifid 
+  1234                              <3>  equ $-%$startoftable
+  1235                              <3> %endif
+  1236                              <3>  GLOBAL ?fixD%%jloc
+  1237                              <3> ?fixD%%jloc:
+  1238 00000330 1000408E[00000000]  <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1239                              <2> 
+  1240                              <2> mem_data_IDT_size equ $-mem_data_IDT
+  1241                              <2> 
+  1242                              <2> ;===================
+  1243                              <2> mem_data_TL:
+  1244                              <2> 	
+  1245 00000338 04000000            <2>     dd	4	;Address to current TSS
+  1246 0000033C 04000000            <2>     dd	4	;Address to last TSS, Limit of List, Size of list, 0 = only idle task
+  1247 00000340 0000                <2>     dw	0	;Current task state owner(TSS selector)
+  1248                              <2> 
+  1249 00000342 00<rept>            <2> times multitasking_struc.HeadSize-($-mem_data_TL) db 0
+  1250                              <2> 
+  1251                              <2> ;===Entry 0: Idle task	
+  1252 00000348 2000                <2> 	dw	Idle_TSS_sel
+  1253 0000034A 2000                <2> 	dw	Idle_TSS_sel
+  1254                              <2> ;Module task
+  1255 0000034C 3800                <2> 	dw	Mod_TSS_sel
+  1256 0000034E 3800                <2> 	dw	Mod_TSS_sel
+  1257                              <2>     
+  1258                              <2> mem_data_TL_size equ $-mem_data_TL
+  1259                              <2> 
+  1260                              <2> 
+  1261                              <2> ;===================
+  1262                              <2> mem_data_Mod:
+  1263 00000350 4C6F61646572204D6F- <2> 	db	'Loader Module v1'
+  1264 00000359 64756C65207631      <2>
+  1265                              <2> mem_data_Mod_size equ $-mem_data_Mod
+  1266                              <2> 
+  1267                              <2> mem_data_Mod_LDT:
+  1268                              <2> 	mem_data_Mod_LDT.code_sel:
+  1269                              <2> 		desc lin_Mod_Data << 12, 0,	D_DPL1 + D_CODE + D_READ + D_BIG + D_BIG_LIM		;Code
+  1270                              <3> %ifid 
+  1271                              <3>  equ $-%$startoftable
+  1272                              <3> %endif
+  1273                              <3>  GLOBAL ?fixD%%jloc
+  1274                              <3> ?fixD%%jloc:
+  1275 00000360 0000C0BA0000A000    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1276                              <2> 	mem_data_Mod_LDT.data_sel:
+  1277                              <2> 		desc lin_Mod_Data << 12, 0,	D_DPL1 + D_DATA + D_WRITE + D_BIG + D_BIG_LIM	;Data
+  1278                              <3> %ifid 
+  1279                              <3>  equ $-%$startoftable
+  1280                              <3> %endif
+  1281                              <3>  GLOBAL ?fixD%%jloc
+  1282                              <3> ?fixD%%jloc:
+  1283 00000368 0000C0B20000A000    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1284                              <2> 	mem_data_Mod_LDT.stack:
+  1285                              <2> 		desc lin_Mod_Stack << 12, size_Mod_Stack - 1,	D_DPL1 + D_DATA + D_WRITE + D_BIG + D_BIG_LIM	;Data, Stack
+  1286                              <3> %ifid 
+  1287                              <3>  equ $-%$startoftable
+  1288                              <3> %endif
+  1289                              <3>  GLOBAL ?fixD%%jloc
+  1290                              <3> ?fixD%%jloc:
+  1291 00000370 0000C0B200504100    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1292                              <2> 	mem_data_Mod_LDT.tss_stack:
+  1293                              <2> 		desc (lin_Mod_TSS << 12) + task_struc.Stack, task_struc.StackSize - 1,	D_DPL0 + D_DATA + D_WRITE + D_BIG	;TSS, Stack
+  1294                              <3> %ifid 
+  1295                              <3>  equ $-%$startoftable
+  1296                              <3> %endif
+  1297                              <3>  GLOBAL ?fixD%%jloc
+  1298                              <3> ?fixD%%jloc:
+  1299 00000378 FF0B409200744100    <3>  dd (%2) + ( ( (%3) ^ D_PRESENT ) << 16 ) , (%1)
+  1300                              <2> mem_data_Mod_LDT_size equ $-mem_data_Mod_LDT
+  1301                              <2> 
+  1302                              <2> mem_data_Mod_TSS:
+  1303 00000380 0000                <2> .tss:   dw   0    ;Task Link
+  1304 00000382 0000                <2> 	   dw   0    ;reserved
+  1305                              <2> 
+  1306 00000384 FC0B0000            <2> 		dd	task_struc.StackSize-4	;esp0
+  1307 00000388 1C00                <2> 		dw	mem_data_Mod_LDT.tss_stack - mem_data_Mod_LDT + 4
+  1308 0000038A 0000                <2> 		dw   0    ;reserved
+  1309 0000038C 00000000            <2> 		dd   0    ;esp1
+  1310 00000390 0000                <2> 		dw   0    ;ss1
+  1311 00000392 0000                <2> 		dw   0    ;reserved
+  1312 00000394 00000000            <2> 		dd   0    ;esp2
+  1313 00000398 0000                <2> 		dw   0    ;ss2
+  1314 0000039A 0000                <2> 		dw   0    ;reserved
+  1315                              <2> 
+  1316 0000039C 00100000            <2> 		dd   (mem_PD << 12) ;cr3/PDBR
+  1317                              <2> 
+  1318 000003A0 00020000            <2> 		dd   200h	;eip = first loaded file(+1 sector)
+  1319 000003A4 02020000            <2> 		dd   202h    ;eflags
+  1320                              <2> 
+  1321 000003A8 00000000            <2> 		dd   0    ;eax
+  1322 000003AC 00000000            <2> 		dd   0    ;ecx
+  1323 000003B0 00000000            <2> 		dd   0    ;edx
+  1324 000003B4 00000000            <2> 		dd   0    ;ebx
+  1325                              <2> 
+  1326 000003B8 FC0F0000            <2> 		dd   0FFCh ;esp
+  1327 000003BC 00000000            <2> 		dd   0    ;ebp
+  1328                              <2> 
+  1329 000003C0 00000000            <2> 		dd   0    ;esi
+  1330 000003C4 00000000            <2> 		dd   0    ;edi
+  1331                              <2> 
+  1332 000003C8 0C00                <2> 		dw   mem_data_Mod_LDT.data_sel - mem_data_Mod_LDT + 4    ;es
+  1333 000003CA 0000                <2> 		dw   0    ;    Reserved
+  1334 000003CC 0500                <2> 		dw   mem_data_Mod_LDT.code_sel - mem_data_Mod_LDT + 4 + 1 	;cs	+ TI + RPL1
+  1335 000003CE 0000                <2> 		dw   0    ;    Reserved
+  1336 000003D0 1500                <2> 		dw	mem_data_Mod_LDT.stack	 - mem_data_Mod_LDT + 4 + 1	;ss
+  1337 000003D2 0000                <2> 		dw   0    ;    Reserved
+  1338 000003D4 0C00                <2> 		dw	mem_data_Mod_LDT.data_sel - mem_data_Mod_LDT + 4	;ds
+  1339 000003D6 0000                <2> 		dw   0    ;    Reserved
+  1340 000003D8 0C00                <2> 		dw	mem_data_Mod_LDT.data_sel - mem_data_Mod_LDT + 4	;fs
+  1341 000003DA 0000                <2> 		dw   0    ;    Reserved
+  1342 000003DC 0C00                <2> 		dw	mem_data_Mod_LDT.data_sel - mem_data_Mod_LDT + 4	;gs
+  1343 000003DE 0000                <2> 		dw   0    ;    Reserved
+  1344 000003E0 3000                <2> 		dw   Mod_LDT_sel    ;LDT
+  1345 000003E2 0000                <2> 		dw   0    ;    Reserved
+  1346                              <2> 
+  1347 000003E4 0000                <2> 		dw   0    ;trap(bit0)
+  1348 000003E6 6800                <2> 		dw   (.iobase - .tss)    ;IO map Base Address
+  1349                              <2> .iobase:
+  1350                              <2> 
+  1351                              <2> mem_data_Mod_TSS_size equ $-mem_data_Mod_TSS
+  1352                              <1> 
+  1353                              <1> check_edi:
+  1354                              <1> 	;Even pages check:
+  1355 000003E8 89F8                <1> 		mov  eax, edi
+  1356 000003EA 25FF0F0000          <1> 		and  eax, 0FFFh
+  1357 000003EF 7403                <1> 		jz	.bios
+  1358                              <1> 		.eternal:
+  1359 000003F1 F4                  <1> 		hlt
+  1360 000003F2 EBFD                <1> 		jmp	.eternal
+  1361                              <1> 	.bios:
+  1362 000003F4 81FF00000200        <1> 	cmp	edi, mem
+  1363 000003FA 7420                <1> 	je	.fix_loader
+  1364 000003FC 81FF00000A00        <1> 	cmp	edi, 0A0000h
+  1365 00000402 7420                <1> 	je	.fix_bios
+  1366                              <1> 		
+  1367                              <1> 	PrintHex edi, 8
+  1368 00000404 60                  <2>  pusha
+  1369 00000405 89F8                <2>  mov eax, %1
+  1370 00000407 B908000000          <2>  mov ecx, %2
+  1371 0000040C E8DBFCFFFF          <2>  call RS232.PrintHex
+  1372 00000411 61                  <2>  popa
+  1373                              <1> 	PrintByte ' '
+  1374 00000412 60                  <2>  pusha
+  1375 00000413 B020                <2>  mov al, %1
+  1376 00000415 E856FCFFFF          <2>  call RS232.PrintByte
+  1377 0000041A 61                  <2>  popa
+  1378 0000041B C3                  <1> 	ret
+  1379                              <1> 
+  1380                              <1> 	.fix_loader:
+  1381 0000041C 81C7[00000000]      <1> 		add	edi, Loader_Size_bytes
+  1382 00000422 EBD0                <1> 		jmp	.bios
+  1383                              <1> 		
+  1384                              <1> 	.fix_bios:
+  1385 00000424 BF00001000          <1> 		mov	edi, 100000h
+  1386 00000429 EBC9                <1> 		jmp	.bios
+  1387                              <1> 
+  1388                              <1> 		
+  1389 0000042B 0A446174613A202020- <1> deb	db 10,'Data:    Address:',10,0	
+  1390 00000434 20416464726573733A- <1>
+  1391 0000043D 0A00                <1>
+  1392 0000043F 0A50443A2020202020- <1> deb1	db 10,'PD:      ',0
+  1393 00000448 2000                <1>
+  1394 0000044A 0A5054313A20202020- <1> deb2	db 10,'PT1:     ',0
+  1395 00000453 2000                <1>
+  1396 00000455 0A5054323A20202020- <1> deb3	db 10,'PT2:     ',0
+  1397 0000045E 2000                <1>
+  1398 00000460 0A4B65726E656C3A20- <1> deb4	db 10,'Kernel:  ',0
+  1399 00000469 2000                <1>
+  1400 0000046B 0A4D6F64756C653A20- <1> deb5	db 10,'Module:  ',0
+  1401 00000474 2000                <1>
+  1402 00000476 0A537461636B3A2020- <1> deb6	db 10,'Stack:   ',0
+  1403 0000047F 2000                <1>
+  1404 00000481 0A4744543A20202020- <1> deb7	db 10,'GDT:     ',0
+  1405 0000048A 2000                <1>
+  1406 0000048C 0A4944543A20202020- <1> deb8	db 10,'IDT:     ',0
+  1407 00000495 2000                <1>
+  1408 00000497 0A544C3A2020202020- <1> deb9	db 10,'TL:      ',0
+  1409 000004A0 2000                <1>
+  1410 000004A2 0A4650543A20202020- <1> deba	db 10,'FPT:     ',0
+  1411 000004AB 2000                <1>
+  1412 000004AD 0A464C4D3A20202020- <1> debb	db 10,'FLM:     ',0
+  1413 000004B6 2000                <1>
+  1414 000004B8 0A54656D702050443A- <1> debc	db 10,'Temp PD: ',0
+  1415 000004C1 2000                <1>
+  1416                              <1> 
+  1417                              <1> 
+  1418                              <1> mem_data_over:
+  1419                              <1> 
+  1420 000004C3 53                  <1> push	ebx	;ebx = nanos.dat
+  1421                              <1> 
+  1422                              <1> 	Print deb
+  1423 000004C4 60                  <2>  pusha
+  1424 000004C5 BA[2B040000]        <2>  mov edx, %1
+  1425 000004CA E88EFBFFFF          <2>  call RS232.Print
+  1426 000004CF 61                  <2>  popa
+  1427                              <1> 	
+  1428                              <1> ;Memory Layout
+  1429                              <1> ;	page:		contents:
+  1430                              <1> ;	0		BIOS data
+  1431                              <1> ;	1		free(boot code: 10)
+  1432                              <1> ;	20-x		Loader
+  1433                              <1> ;	x-A0		Free
+  1434                              <1> ;	A0-100	BIOS(Video, Code)
+  1435                              <1> ;	100-		Free
+  1436                              <1> 
+  1437                              <1> 
+  1438                              <1> 	;Start of memory initiation
+  1439                              <1> 	;Page 1: PD - Page Directory
+  1440                              <1> 	Print deb1
+  1441 000004D0 60                  <2>  pusha
+  1442 000004D1 BA[3F040000]        <2>  mov edx, %1
+  1443 000004D6 E882FBFFFF          <2>  call RS232.Print
+  1444 000004DB 61                  <2>  popa
+  1445 000004DC BF00100000          <1> 		mov  edi, mem_PD * pages		;Keeps track of where to write througout this initiation
+  1446 000004E1 E802FFFFFF          <1> 		call	check_edi
+  1447                              <1> 		%include 'mem_PD.asm'	
+  1448                              <2> ;Setup Pageing
+  1449                              <2> 
+  1450                              <2>     ;PD - Page Directory
+  1451 000004E6 B900040000          <2> 	mov	ecx, pages / 4
+  1452 000004EB 89F8                <2> 	mov	eax, edi
+  1453 000004ED 2500F0FFFF          <2> 	and	eax, 0FFFFF000h
+  1454 000004F2 0D03000000          <2> 	or	eax, 3
+  1455                              <2> 	put
+  1456 000004F7 AB                  <3>  stosd
+  1457 000004F8 49                  <3>  dec ecx
+  1458                              <2> 	
+  1459                              <2> 	pt_fill 0
+  1460 000004F9 B800000000          <3>  mov eax, %1
+  1461 000004FE F3AB                <3>  rep stosd
+  1462                              <2> 	
+  1463 00000500 E930000000          <2> 	jmp	PD_over
+  1464                              <2> 	
+  1465                              <2> PD_add_Page:
+  1466                              <2> 	;Map linear address to physical address
+  1467                              <2> 	;eax = linear address
+  1468                              <2> 	;edi = physical address
+  1469                              <2> 
+  1470 00000505 50                  <2> 	push	eax
+  1471                              <2> 	
+  1472                              <2> 		;Step 1: PD
+  1473 00000506 250000C0FF          <2> 		and	eax, 0FFC00000h
+  1474 0000050B C1E814              <2> 		shr	eax, 20
+  1475 0000050E 0500100000          <2> 		add	eax, mem_PD * pages
+  1476 00000513 8B18                <2> 		mov	ebx, [eax]
+  1477 00000515 81E300F0FFFF        <2> 		and	ebx, 0FFFFF000h
+  1478                              <2> 		;ebx = Pointer at PTx
+  1479                              <2> 		
+  1480 0000051B 58                  <2> 	pop	eax
+  1481                              <2> 
+  1482                              <2> 	;Step 2: PTx
+  1483 0000051C 2500F03F00          <2> 	and	eax, 003FF000h
+  1484 00000521 C1E80A              <2> 	shr	eax, 10
+  1485 00000524 01C3                <2> 	add	ebx, eax
+  1486                              <2> 	;ebx = pointer att page entry
+  1487                              <2> 
+  1488 00000526 81CF01000000        <2> 	or	edi,         1	;Present
+  1489 0000052C 893B                <2> 	mov	[ebx], edi
+  1490 0000052E 81E700F0FFFF        <2> 	and	edi, 0FFFFF000h
+  1491 00000534 C3                  <2> 	ret
+  1492                              <2> 	
+  1493                              <2> PD_over:
+  1494                              <1> 
+  1495                              <1> 		
+  1496                              <1> 	;Page x: PT1 - Page Table 1
+  1497                              <1> 	Print deb2
+  1498 00000535 60                  <2>  pusha
+  1499 00000536 BA[4A040000]        <2>  mov edx, %1
+  1500 0000053B E81DFBFFFF          <2>  call RS232.Print
+  1501 00000540 61                  <2>  popa
+  1502                              <1> 		new_Page 1
+  1503 00000541 50                  <2>  push eax
+  1504 00000542 E8A1FEFFFF          <2>  call check_edi
+  1505 00000547 58                  <2>  pop eax
+  1506 00000548 60                  <2>  pusha
+  1507 00000549 B801000000          <2>  mov eax, %1
+  1508 0000054E C1E00C              <2>  shl eax, 12
+  1509 00000551 E8AFFFFFFF          <2>  call PD_add_Page
+  1510 00000556 61                  <2>  popa
+  1511 00000557 5B                  <1> pop	ebx	;ebx = nanos.dat
+  1512 00000558 57                  <1> push	edi
+  1513 00000559 53                  <1> push	ebx	;ebx = nanos.dat
+  1514                              <1> 
+  1515                              <1> 		%include 'mem_PT1.asm'
+  1516                              <2> ;PT1 - Page Table 1 = 4 - 8MB
+  1517                              <2> 	
+  1518                              <2> 	;Zero table
+  1519 0000055A B900040000          <2> 	mov	ecx, 1*pages / 4
+  1520                              <2> 	pt_fill 0
+  1521 0000055F B800000000          <3>  mov eax, %1
+  1522 00000564 F3AB                <3>  rep stosd
+  1523                              <2> 	
+  1524                              <1> 
+  1525                              <1> 	Print deb3
+  1526 00000566 60                  <2>  pusha
+  1527 00000567 BA[55040000]        <2>  mov edx, %1
+  1528 0000056C E8ECFAFFFF          <2>  call RS232.Print
+  1529 00000571 61                  <2>  popa
+  1530                              <1> 		new_Page 2
+  1531 00000572 50                  <2>  push eax
+  1532 00000573 E870FEFFFF          <2>  call check_edi
+  1533 00000578 58                  <2>  pop eax
+  1534 00000579 60                  <2>  pusha
+  1535 0000057A B802000000          <2>  mov eax, %1
+  1536 0000057F C1E00C              <2>  shl eax, 12
+  1537 00000582 E87EFFFFFF          <2>  call PD_add_Page
+  1538 00000587 61                  <2>  popa
+  1539                              <1> 		%include 'mem_PT2.asm'
+  1540                              <2> ;PT2 - Page Table 2 = 8 - 12MB
+  1541                              <2> 	
+  1542                              <2> 	;Zero table
+  1543 00000588 B900040000          <2> 	mov	ecx, 1*pages / 4
+  1544                              <2> 	pt_fill 0
+  1545 0000058D B800000000          <3>  mov eax, %1
+  1546 00000592 F3AB                <3>  rep stosd
+  1547                              <2> 	
+  1548                              <1> 
+  1549                              <1> 	;BIOS data + Nanos System Data
+  1550 00000594 57                  <1> 	push	edi
+  1551 00000595 B800004000          <1> 		mov	eax, lin_BIOS * pages	;eax = linear address
+  1552 0000059A BF00000000          <1> 		mov	edi, 0				;edi = physical address
+  1553 0000059F E861FFFFFF          <1> 		call	PD_add_Page
+  1554 000005A4 5F                  <1> 	pop	edi
+  1555                              <1> 				
+  1556                              <1> 	;Move kernel
+  1557                              <1> 	Print deb4
+  1558 000005A5 60                  <2>  pusha
+  1559 000005A6 BA[60040000]        <2>  mov edx, %1
+  1560 000005AB E8ADFAFFFF          <2>  call RS232.Print
+  1561 000005B0 61                  <2>  popa
+  1562                              <1> 		%include 'mem_kernel.asm'
+  1563                              <2> ;Memory move
+  1564                              <2> ;
+  1565                              <2> ;Kernel
+  1566                              <2> MoveKernel:
+  1567 000005B1 BA18040000          <2> 	mov	edx, lin_kern
+  1568 000005B6 B9[00000000]        <2> 	mov	ecx, size_kern
+  1569 000005BB BE[00000000]        <2> 	mov	esi, Kernel_Start
+  1570                              <2> 
+  1571                              <2> 	.move:	
+  1572                              <2> 	new_Page edx
+  1573 000005C0 50                  <3>  push eax
+  1574 000005C1 E822FEFFFF          <3>  call check_edi
+  1575 000005C6 58                  <3>  pop eax
+  1576 000005C7 60                  <3>  pusha
+  1577 000005C8 89D0                <3>  mov eax, %1
+  1578 000005CA C1E00C              <3>  shl eax, 12
+  1579 000005CD E833FFFFFF          <3>  call PD_add_Page
+  1580 000005D2 61                  <3>  popa
+  1581 000005D3 51                  <2> 	push	ecx
+  1582 000005D4 B900040000          <2> 		mov	ecx, pages / 4
+  1583 000005D9 F3A5                <2> 		rep	movsd
+  1584 000005DB 59                  <2> 	pop	ecx
+  1585 000005DC 42                  <2> 	inc	edx
+  1586 000005DD E2E1                <2> 	loop	.move
+  1587                              <2> 
+  1588                              <2> 
+  1589                              <2> 
+  1590                              <1> 		
+  1591                              <1> 
+  1592 000005DF 5B                  <1> pop	ebx	;ebx = nanos.dat
+  1593                              <1> 
+  1594                              <1> 	;Move Loader module
+  1595                              <1> 	Print deb5
+  1596 000005E0 60                  <2>  pusha
+  1597 000005E1 BA[6B040000]        <2>  mov edx, %1
+  1598 000005E6 E872FAFFFF          <2>  call RS232.Print
+  1599 000005EB 61                  <2>  popa
+  1600                              <1> 		%include 'mem_module.asm'
+  1601                              <2> ;Memory move
+  1602                              <2> ;
+  1603                              <2> ;Loader module
+  1604                              <2> 
+  1605                              <2> 
+  1606                              <2> 	;ebx = nanos.dat
+  1607                              <2> 
+  1608                              <2> Load_mod:
+  1609 000005EC BA000A0000          <2> 	mov	edx, lin_Mod_Data	;page
+  1610                              <2> 	
+  1611 000005F1 31C9                <2> 	xor	ecx, ecx
+  1612 000005F3 668B8BFC010000      <2> 	mov	cx, [ebx + Loader_init.data_end]
+  1613 000005FA C1E104              <2> 	shl	ecx, 4
+  1614 000005FD 81E900000200        <2> 	sub	ecx, mem	;ecx = size in bytes(even sectors, 512 byte)
+  1615 00000603 49                  <2> 	dec	ecx
+  1616 00000604 C1E90C              <2> 	shr	ecx, 12
+  1617 00000607 51                  <2> 	push	ecx
+  1618 00000608 41                  <2> 		inc	ecx		;ecx = size in pages
+  1619                              <2> 	
+  1620 00000609 C1E10C              <2> 		shl	ecx, 12
+  1621 0000060C 898BFC010000        <2> 		mov	[ebx + Loader_init.data_end], ecx
+  1622 00000612 C1E90C              <2> 		shr	ecx, 12
+  1623                              <2> 		
+  1624 00000615 89DE                <2> 		mov	esi, ebx
+  1625                              <2> 
+  1626                              <2> 		.move:	
+  1627                              <2> 		new_user_Page edx
+  1628 00000617 50                  <3>  push eax
+  1629 00000618 E8CBFDFFFF          <3>  call check_edi
+  1630 0000061D 58                  <3>  pop eax
+  1631 0000061E 60                  <3>  pusha
+  1632 0000061F 89D0                <3>  mov eax, %1
+  1633 00000621 C1E00C              <3>  shl eax, 12
+  1634 00000624 81CF07000000        <3>  or edi, 0111b
+  1635 0000062A E8D6FEFFFF          <3>  call PD_add_Page
+  1636 0000062F 61                  <3>  popa
+  1637 00000630 51                  <2> 		push	ecx
+  1638 00000631 B900040000          <2> 			mov	ecx, pages / 4
+  1639 00000636 F3A5                <2> 			rep	movsd
+  1640 00000638 59                  <2> 		pop	ecx
+  1641 00000639 42                  <2> 		inc	edx
+  1642 0000063A E2DB                <2> 		loop	.move
+  1643                              <2> 		
+  1644                              <2> 	;Stack
+  1645                              <2> 		new_user_Page lin_Mod_Stack
+  1646 0000063C 50                  <3>  push eax
+  1647 0000063D E8A6FDFFFF          <3>  call check_edi
+  1648 00000642 58                  <3>  pop eax
+  1649 00000643 60                  <3>  pusha
+  1650 00000644 B815040000          <3>  mov eax, %1
+  1651 00000649 C1E00C              <3>  shl eax, 12
+  1652 0000064C 81CF07000000        <3>  or edi, 0111b
+  1653 00000652 E8AEFEFFFF          <3>  call PD_add_Page
+  1654 00000657 61                  <3>  popa
+  1655                              <2> 
+  1656                              <2> 		put_fill   0, 0, pages
+  1657                              <3> 
+  1658                              <3> 
+  1659 00000658 B900000000          <3>  mov ecx, (%1)/4
+  1660 0000065D BE00000000          <3>  mov esi, %2
+  1661 00000662 F3A5                <3>  rep movsd
+  1662                              <3> 
+  1663                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1664 00000664 B900040000          <3>  mov ecx, ((%3) - (%1))/4
+  1665 00000669 B800000000          <3>  mov eax, 0
+  1666 0000066E F3AB                <3>  rep stosd
+  1667                              <3>  %endif
+  1668                              <2> 		
+  1669                              <2> 	;LDT
+  1670                              <2> 		new_Page lin_Mod_LDT
+  1671 00000670 50                  <3>  push eax
+  1672 00000671 E872FDFFFF          <3>  call check_edi
+  1673 00000676 58                  <3>  pop eax
+  1674 00000677 60                  <3>  pusha
+  1675 00000678 B816040000          <3>  mov eax, %1
+  1676 0000067D C1E00C              <3>  shl eax, 12
+  1677 00000680 E880FEFFFF          <3>  call PD_add_Page
+  1678 00000685 61                  <3>  popa
+  1679                              <2> 
+  1680                              <2> 		;Module data(name)
+  1681                              <2> 		put_fill	mem_data_Mod_size, mem_data_Mod, module_struc.LDT
+  1682                              <3> 
+  1683                              <3> 
+  1684 00000686 B904000000          <3>  mov ecx, (%1)/4
+  1685 0000068B BE[50030000]        <3>  mov esi, %2
+  1686 00000690 F3A5                <3>  rep movsd
+  1687                              <3> 
+  1688                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1689 00000692 B93C000000          <3>  mov ecx, ((%3) - (%1))/4
+  1690 00000697 B800000000          <3>  mov eax, 0
+  1691 0000069C F3AB                <3>  rep stosd
+  1692                              <3>  %endif
+  1693                              <2> 		
+  1694                              <2> 		;Module LDT
+  1695                              <2> 		put_fill	mem_data_Mod_LDT_size, mem_data_Mod_LDT, pages - module_struc.LDT	
+  1696                              <3> 
+  1697                              <3> 
+  1698 0000069E B908000000          <3>  mov ecx, (%1)/4
+  1699 000006A3 BE[60030000]        <3>  mov esi, %2
+  1700 000006A8 F3A5                <3>  rep movsd
+  1701                              <3> 
+  1702                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1703 000006AA B9B8030000          <3>  mov ecx, ((%3) - (%1))/4
+  1704 000006AF B800000000          <3>  mov eax, 0
+  1705 000006B4 F3AB                <3>  rep stosd
+  1706                              <3>  %endif
+  1707                              <2> 
+  1708 000006B6 59                  <2> 	pop	ecx	;ecx = size in pages - 1	
+  1709                              <2> 	;fix limits of code and data segments
+  1710 000006B7 89FB                <2> 	mov	ebx, edi
+  1711 000006B9 81C300F1FFFF        <2> 	add	ebx, module_struc.LDT - pages
+  1712 000006BF 66890B              <2> 	mov	[ebx], cx		;Code segment
+  1713 000006C2 66894B08            <2> 	mov	[ebx+8], cx	;Data segment
+  1714                              <2> 	
+  1715                              <2> 
+  1716                              <2> ;TSS
+  1717                              <2> 	new_Page lin_Mod_TSS
+  1718 000006C6 50                  <3>  push eax
+  1719 000006C7 E81CFDFFFF          <3>  call check_edi
+  1720 000006CC 58                  <3>  pop eax
+  1721 000006CD 60                  <3>  pusha
+  1722 000006CE B817040000          <3>  mov eax, %1
+  1723 000006D3 C1E00C              <3>  shl eax, 12
+  1724 000006D6 E82AFEFFFF          <3>  call PD_add_Page
+  1725 000006DB 61                  <3>  popa
+  1726                              <2> 
+  1727                              <2> 	put_fill	mem_data_Mod_TSS_size, mem_data_Mod_TSS, pages
+  1728                              <3> 
+  1729                              <3> 
+  1730 000006DC B91A000000          <3>  mov ecx, (%1)/4
+  1731 000006E1 BE[80030000]        <3>  mov esi, %2
+  1732 000006E6 F3A5                <3>  rep movsd
+  1733                              <3> 
+  1734                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1735 000006E8 B9E6030000          <3>  mov ecx, ((%3) - (%1))/4
+  1736 000006ED B800000000          <3>  mov eax, 0
+  1737 000006F2 F3AB                <3>  rep stosd
+  1738                              <3>  %endif
+  1739                              <2> 	
+  1740                              <1> 
+  1741                              <1> 	;Kernel idle Stack
+  1742                              <1> 	Print deb6
+  1743 000006F4 60                  <2>  pusha
+  1744 000006F5 BA[76040000]        <2>  mov edx, %1
+  1745 000006FA E85EF9FFFF          <2>  call RS232.Print
+  1746 000006FF 61                  <2>  popa
+  1747                              <1> 		%include 'mem_stack.asm'
+  1748                              <2> ;Stack
+  1749                              <2> 	new_Page lin_Stack
+  1750 00000700 50                  <3>  push eax
+  1751 00000701 E8E2FCFFFF          <3>  call check_edi
+  1752 00000706 58                  <3>  pop eax
+  1753 00000707 60                  <3>  pusha
+  1754 00000708 B814040000          <3>  mov eax, %1
+  1755 0000070D C1E00C              <3>  shl eax, 12
+  1756 00000710 E8F0FDFFFF          <3>  call PD_add_Page
+  1757 00000715 61                  <3>  popa
+  1758                              <2> 
+  1759                              <2> 	put_fill   0, 0, pages
+  1760                              <3> 
+  1761                              <3> 
+  1762 00000716 B900000000          <3>  mov ecx, (%1)/4
+  1763 0000071B BE00000000          <3>  mov esi, %2
+  1764 00000720 F3A5                <3>  rep movsd
+  1765                              <3> 
+  1766                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1767 00000722 B900040000          <3>  mov ecx, ((%3) - (%1))/4
+  1768 00000727 B800000000          <3>  mov eax, 0
+  1769 0000072C F3AB                <3>  rep stosd
+  1770                              <3>  %endif
+  1771                              <2> 	
+  1772                              <1> 	
+  1773                              <1> 	;GDT
+  1774                              <1> 	Print deb7
+  1775 0000072E 60                  <2>  pusha
+  1776 0000072F BA[81040000]        <2>  mov edx, %1
+  1777 00000734 E824F9FFFF          <2>  call RS232.Print
+  1778 00000739 61                  <2>  popa
+  1779                              <1> 		%include 'mem_GDT.asm'
+  1780                              <2> ;GDT
+  1781                              <2> 	new_Page lin_GDT
+  1782 0000073A 50                  <3>  push eax
+  1783 0000073B E8A8FCFFFF          <3>  call check_edi
+  1784 00000740 58                  <3>  pop eax
+  1785 00000741 60                  <3>  pusha
+  1786 00000742 B803040000          <3>  mov eax, %1
+  1787 00000747 C1E00C              <3>  shl eax, 12
+  1788 0000074A E8B6FDFFFF          <3>  call PD_add_Page
+  1789 0000074F 61                  <3>  popa
+  1790                              <2> 	
+  1791                              <2> 	put_fill	mem_data_GDT_size, mem_data_GDT, pages
+  1792                              <3> 
+  1793                              <3> 
+  1794 00000750 B910000000          <3>  mov ecx, (%1)/4
+  1795 00000755 BE[F0010000]        <3>  mov esi, %2
+  1796 0000075A F3A5                <3>  rep movsd
+  1797                              <3> 
+  1798                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1799 0000075C B9F0030000          <3>  mov ecx, ((%3) - (%1))/4
+  1800 00000761 B800000000          <3>  mov eax, 0
+  1801 00000766 F3AB                <3>  rep stosd
+  1802                              <3>  %endif
+  1803                              <2> 	
+  1804                              <1> 
+  1805                              <1> 	;IDT
+  1806                              <1> 	Print deb8
+  1807 00000768 60                  <2>  pusha
+  1808 00000769 BA[8C040000]        <2>  mov edx, %1
+  1809 0000076E E8EAF8FFFF          <2>  call RS232.Print
+  1810 00000773 61                  <2>  popa
+  1811                              <1> 		%include 'mem_IDT.asm'
+  1812                              <2> ;IDT
+  1813                              <2> 	new_Page lin_IDT
+  1814 00000774 50                  <3>  push eax
+  1815 00000775 E86EFCFFFF          <3>  call check_edi
+  1816 0000077A 58                  <3>  pop eax
+  1817 0000077B 60                  <3>  pusha
+  1818 0000077C B801040000          <3>  mov eax, %1
+  1819 00000781 C1E00C              <3>  shl eax, 12
+  1820 00000784 E87CFDFFFF          <3>  call PD_add_Page
+  1821 00000789 61                  <3>  popa
+  1822                              <2> 
+  1823                              <2> 	put_fill   mem_data_IDT_size, mem_data_IDT, 100h * 8	;100h descriptors
+  1824                              <3> 
+  1825                              <3> 
+  1826 0000078A B942000000          <3>  mov ecx, (%1)/4
+  1827 0000078F BE[30020000]        <3>  mov esi, %2
+  1828 00000794 F3A5                <3>  rep movsd
+  1829                              <3> 
+  1830                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1831 00000796 B9BE010000          <3>  mov ecx, ((%3) - (%1))/4
+  1832 0000079B B800000000          <3>  mov eax, 0
+  1833 000007A0 F3AB                <3>  rep stosd
+  1834                              <3>  %endif
+  1835 000007A2 81C700080000        <2> 	add  edi, 800h
+  1836                              <2> 
+  1837                              <2> 
+  1838                              <2> 
+  1839                              <2> ; desc  offset, selector, control   ;For gate descriptors
+  1840                              <2> 
+  1841                              <2> ;Each descriptor should have exactly one of next 8 codes to define the type of
+  1842                              <2> ;descriptor
+  1843                              <2> ;D_TASK		EQU	 500h	;Task gate
+  1844                              <2> ;D_INT		EQU	0E00h	;386 interrupt gate
+  1845                              <2> ;D_TRAP		EQU	0F00h	;386 trap gate
+  1846                              <2> 
+  1847                              <2> ;Descriptors may include the following as appropriate:
+  1848                              <2> ;D_DPL3		EQU	6000h	;DPL3 or mask for DPL
+  1849                              <2> ;D_DPL2		EQU	4000h
+  1850                              <2> ;D_DPL1		EQU	2000h
+  1851                              <2> ;D_PRESENT	EQU	8000h	;Present
+  1852                              <2> ;D_NOT_PRESENT	EQU	8000h	;Not Present
+  1853                              <2> 				;Note, the PRESENT bit is set by default
+  1854                              <2> 				;Include NOT_PRESENT to turn it off
+  1855                              <2> 				;Do not specify D_PRESENT
+  1856                              <2> 
+  1857                              <2> ;Segment descriptors (not gates) may include:
+  1858                              <2> 
+  1859                              <2> ;D_BIG		EQU	  40h	;Default to 32 bit mode (USE32)
+  1860                              <2> ;D_BIG_LIM	EQU	  80h	;Limit is in 4K units
+  1861                              <2> 
+  1862                              <2> 
+  1863                              <2> 
+  1864                              <2> ;Reference:
+  1865                              <2> ;0   Divide Error
+  1866                              <2> ;1   Debug Exception
+  1867                              <2> ;2   NMI  Interrupt
+  1868                              <2> ;3   Breakpoint
+  1869                              <2> ;4   INTO - overflow
+  1870                              <2> ;5   BOUND Range exceeded
+  1871                              <2> ;6   Invalid opcode
+  1872                              <2> ;7   Device not available
+  1873                              <2> ;8   Double Fault
+  1874                              <2> ;9   Co-processor segment overrun
+  1875                              <2> ;A   Invalid TSS
+  1876                              <2> ;B   Segment Not Present
+  1877                              <2> ;C   Stack Fault
+  1878                              <2> ;D   General Protection Fault
+  1879                              <2> ;E   Page Fault
+  1880                              <2> ;F
+  1881                              <2> ;10  Floating Point Error
+  1882                              <2> ;11  Alignment Check
+  1883                              <2> ;...
+  1884                              <2> ;1E
+  1885                              <2> ;1F  Reserved
+  1886                              <2> 
+  1887                              <2> ;20  IRQ 0
+  1888                              <2> ;21  IRQ 1
+  1889                              <2> ;.
+  1890                              <2> ;.
+  1891                              <2> ;.
+  1892                              <2> ;2F  IRQ F
+  1893                              <2> 
+  1894                              <2> ;30  Free
+  1895                              <2> ;.
+  1896                              <2> ;.
+  1897                              <1> 
+  1898                              <1> 	;Task list
+  1899                              <1> 	Print deb9
+  1900 000007A8 60                  <2>  pusha
+  1901 000007A9 BA[97040000]        <2>  mov edx, %1
+  1902 000007AE E8AAF8FFFF          <2>  call RS232.Print
+  1903 000007B3 61                  <2>  popa
+  1904                              <1> 		%include 'mem_TL.asm'
+  1905                              <2> ;Task List - Multitasking
+  1906                              <2> 	new_Page lin_TL
+  1907 000007B4 50                  <3>  push eax
+  1908 000007B5 E82EFCFFFF          <3>  call check_edi
+  1909 000007BA 58                  <3>  pop eax
+  1910 000007BB 60                  <3>  pusha
+  1911 000007BC B802040000          <3>  mov eax, %1
+  1912 000007C1 C1E00C              <3>  shl eax, 12
+  1913 000007C4 E83CFDFFFF          <3>  call PD_add_Page
+  1914 000007C9 61                  <3>  popa
+  1915                              <2> 
+  1916                              <2> 	put_fill   mem_data_TL_size, mem_data_TL, pages
+  1917                              <3> 
+  1918                              <3> 
+  1919 000007CA B906000000          <3>  mov ecx, (%1)/4
+  1920 000007CF BE[38030000]        <3>  mov esi, %2
+  1921 000007D4 F3A5                <3>  rep movsd
+  1922                              <3> 
+  1923                              <3>  %if ((%3)/4 - (%1)/4) > 0
+  1924 000007D6 B9FA030000          <3>  mov ecx, ((%3) - (%1))/4
+  1925 000007DB B800000000          <3>  mov eax, 0
+  1926 000007E0 F3AB                <3>  rep stosd
+  1927                              <3>  %endif
+  1928                              <1> 
+  1929                              <1> 	;Free Page
+  1930                              <1> 	Print deba
+  1931 000007E2 60                  <2>  pusha
+  1932 000007E3 BA[A2040000]        <2>  mov edx, %1
+  1933 000007E8 E870F8FFFF          <2>  call RS232.Print
+  1934 000007ED 61                  <2>  popa
+  1935                              <1> 		%include 'mem_FPT.asm'
+  1936                              <2> ;Free Page Table, FreePT
+  1937                              <2> 
+  1938                              <2> ;First entry:
+  1939                              <2> ;	Free memory(bytes) = pointer to last page in list
+  1940                              <2> 
+  1941                              <2> 
+  1942                              <2> FPT:
+  1943 000007EE BB[18040000]        <2> 	mov	ebx, lin_FPT
+  1944                              <2> 	new_Page ebx
+  1945 000007F3 50                  <3>  push eax
+  1946 000007F4 E8EFFBFFFF          <3>  call check_edi
+  1947 000007F9 58                  <3>  pop eax
+  1948 000007FA 60                  <3>  pusha
+  1949 000007FB 89D8                <3>  mov eax, %1
+  1950 000007FD C1E00C              <3>  shl eax, 12
+  1951 00000800 E800FDFFFF          <3>  call PD_add_Page
+  1952 00000805 61                  <3>  popa
+  1953                              <2> 	
+  1954                              <2> 	;Determine pages to reserve
+  1955 00000806 8B1500000000        <2> 	mov	edx, [Nanos_init.MemSize]	;edx = Memory size in bytes
+  1956 0000080C 89D1                <2> 	mov	ecx, edx
+  1957 0000080E 49                  <2> 	dec	ecx
+  1958 0000080F C1E916              <2> 	shr	ecx, 22
+  1959 00000812 41                  <2> 	inc	ecx		;ecx = Pages needed to store pages
+  1960                              <2> 
+  1961                              <2> 	;Save FPT Position
+  1962 00000813 C1E30C              <2> 	shl	ebx, 12
+  1963 00000816 891D04000000        <2> 	mov	[Nanos_init.lin_FPT], ebx
+  1964 0000081C C1EB0C              <2> 	shr	ebx, 12
+  1965 0000081F C1E10C              <2> 	shl	ecx, 12
+  1966 00000822 890D08000000        <2> 	mov	[Nanos_init.lin_FPT_Size], ecx
+  1967 00000828 C1E90C              <2> 	shr	ecx, 12
+  1968                              <2> 	
+  1969 0000082B 57                  <2> 	push	edi
+  1970                              <2> 
+  1971 0000082C BE00000000          <2> 		mov	esi, 0		;last page pointer
+  1972                              <2> 	
+  1973                              <2> 		;find first free page
+  1974 00000831 51                  <2> 		push	ecx
+  1975 00000832 89F8                <2> 			mov	eax, edi
+  1976                              <2> 			.find_free:
+  1977 00000834 0500100000          <2> 				add	eax, pages
+  1978                              <2> 				
+  1979 00000839 3D00000200          <2> 				cmp	eax, mem
+  1980 0000083E 740E                <2> 				je	.add_mem
+  1981                              <2> 				.check_free_bios:
+  1982 00000840 3D00000A00          <2> 				cmp	eax, 0A0000h
+  1983 00000845 740E                <2> 				je	.add_bios
+  1984                              <2> 				.find_next:
+  1985 00000847 E2EB                <2> 			loop .find_free
+  1986                              <2> 				
+  1987 00000849 E90E000000          <2> 			jmp	.find_done
+  1988                              <2> 				.add_mem:
+  1989 0000084E B8[00000200]        <2> 				mov	eax, Loader_Size_bytes + mem
+  1990 00000853 EBEB                <2> 				jmp	.check_free_bios
+  1991                              <2> 				
+  1992                              <2> 				.add_bios:
+  1993 00000855 B800001000          <2> 				mov	eax, 100000h
+  1994 0000085A EBEB                <2> 				jmp	.find_next
+  1995                              <2> 			.find_done:
+  1996 0000085C 59                  <2> 		pop	ecx
+  1997                              <2> 				
+  1998 0000085D 0500100000          <2> 		add	eax, pages	;one page for FLM
+  1999                              <2> 		;eax = first free page
+  2000                              <2> 
+  2001                              <2> 		
+  2002 00000862 81C704000000        <2> 		add	edi, 4	;second entry = first free page
+  2003                              <2> 		
+  2004                              <2> 		;Write pages from loader		
+  2005 00000868 50                  <2> 		push	eax
+  2006 00000869 51                  <2> 		push	ecx
+  2007 0000086A B800000200          <2> 			mov	eax, mem
+  2008 0000086F B9[00000000]        <2> 			mov	ecx, Loader_Size
+  2009                              <2> 			.loader_pages:
+  2010 00000874 AB                  <2> 				stosd
+  2011 00000875 0500100000          <2> 				add	eax, pages
+  2012 0000087A 81C604000000        <2> 				add	esi, 4	
+  2013 00000880 E2F2                <2> 			loop	.loader_pages
+  2014 00000882 59                  <2> 		pop	ecx
+  2015 00000883 58                  <2> 		pop	eax
+  2016                              <2> 		
+  2017                              <2> 					
+  2018                              <2> 		;Start writing table
+  2019                              <2> 		.write:
+  2020 00000884 AB                  <2> 			stosd
+  2021 00000885 0500100000          <2> 			add	eax, pages
+  2022 0000088A 81C604000000        <2> 			add	esi, 4	
+  2023                              <2> 			
+  2024                              <2> 			;end of memory
+  2025 00000890 39D0                <2> 			cmp	eax, edx
+  2026 00000892 7336                <2> 			jae	.done
+  2027                              <2> 			
+  2028                              <2> 			;beginning of bios memory
+  2029 00000894 3D00000A00          <2> 			cmp	eax, 0A0000h
+  2030 00000899 7505                <2> 			jne	.bios_done
+  2031 0000089B B800001000          <2> 			mov	eax, 100000h
+  2032                              <2> 			.bios_done:
+  2033                              <2> 
+  2034                              <2> 			;beginning of loader memory
+  2035                              <2> 			;loader page is already in the list
+  2036 000008A0 3D00000200          <2> 			cmp	eax, mem
+  2037 000008A5 7505                <2> 			jne	.loader_done
+  2038 000008A7 B8[00000200]        <2> 			mov	eax, mem+Loader_Size_bytes
+  2039                              <2> 			.loader_done:
+  2040                              <2> 
+  2041                              <2> 			;new page?
+  2042 000008AC F7C7FF0F0000        <2> 			test	edi, 0FFFh
+  2043 000008B2 75D0                <2> 			jnz	.write
+  2044                              <2> 			
+  2045                              <2> 			;new page
+  2046 000008B4 43                  <2> 			inc ebx
+  2047                              <2> 			new_Page ebx
+  2048 000008B5 50                  <3>  push eax
+  2049 000008B6 E82DFBFFFF          <3>  call check_edi
+  2050 000008BB 58                  <3>  pop eax
+  2051 000008BC 60                  <3>  pusha
+  2052 000008BD 89D8                <3>  mov eax, %1
+  2053 000008BF C1E00C              <3>  shl eax, 12
+  2054 000008C2 E83EFCFFFF          <3>  call PD_add_Page
+  2055 000008C7 61                  <3>  popa
+  2056                              <2> 
+  2057 000008C8 E2BA                <2> 		loop	.write
+  2058                              <2> 							
+  2059                              <2> 		.done
+  2060                              <2> 		;write
+  2061                              <2> 		
+  2062                              <2> 		;ecx = pages left
+  2063                              <2> 		
+  2064 000008CA 89F8                <2> 		mov	eax, edi
+  2065                              <2> 
+  2066 000008CC 5F                  <2> 	pop	edi
+  2067 000008CD 8937                <2> 	mov	[edi], esi
+  2068 000008CF 89C7                <2> 		mov	edi, eax
+  2069                              <2> 	
+  2070 000008D1 C1E60A              <2> 	shl	esi, 10
+  2071                              <2> 	Print .numPages
+  2072 000008D4 60                  <3>  pusha
+  2073 000008D5 BA[27090000]        <3>  mov edx, %1
+  2074 000008DA E87EF7FFFF          <3>  call RS232.Print
+  2075 000008DF 61                  <3>  popa
+  2076                              <2> 	PrintHex esi, 8
+  2077 000008E0 60                  <3>  pusha
+  2078 000008E1 89F0                <3>  mov eax, %1
+  2079 000008E3 B908000000          <3>  mov ecx, %2
+  2080 000008E8 E8FFF7FFFF          <3>  call RS232.PrintHex
+  2081 000008ED 61                  <3>  popa
+  2082                              <2> 
+  2083                              <2> 	;finish last pages
+  2084 000008EE EB13                <2> 	jmp short .fin
+  2085                              <2> 	.finish:
+  2086                              <2> 	new_Page ebx
+  2087 000008F0 50                  <3>  push eax
+  2088 000008F1 E8F2FAFFFF          <3>  call check_edi
+  2089 000008F6 58                  <3>  pop eax
+  2090 000008F7 60                  <3>  pusha
+  2091 000008F8 89D8                <3>  mov eax, %1
+  2092 000008FA C1E00C              <3>  shl eax, 12
+  2093 000008FD E803FCFFFF          <3>  call PD_add_Page
+  2094 00000902 61                  <3>  popa
+  2095                              <2> 	.fin:
+  2096                              <2> 	
+  2097 00000903 51                  <2> 	push	ecx
+  2098 00000904 B900100000          <2> 		mov	ecx, pages
+  2099 00000909 29F9                <2> 		sub	ecx, edi
+  2100 0000090B 81E1FF0F0000        <2> 		and	ecx, 0FFFh
+  2101 00000911 C1E902              <2> 		shr	ecx, 2
+  2102                              <2> 		
+  2103 00000914 B800000000          <2> 		mov	eax, 0
+  2104 00000919 F3AB                <2> 		rep	stosd
+  2105 0000091B 59                  <2> 	pop	ecx
+  2106                              <2> 	
+  2107 0000091C 43                  <2> 	inc ebx
+  2108 0000091D E2D1                <2> 	loop .finish
+  2109                              <2> 	
+  2110                              <2> 	
+  2111 0000091F C1E30C              <2> 	shl	ebx, 12
+  2112                              <2> 	; ebx = linear address of free memory
+  2113                              <2> 
+  2114 00000922 E90F000000          <2> 	jmp	.over
+  2115                              <2> 	
+  2116 00000927 0A46726565206D656D- <2> 	.numPages db 10,'Free memory: ',0
+  2117 00000930 6F72793A2000        <2>
+  2118                              <2> 	
+  2119                              <2> 	.over:
+  2120                              <2> 	
+  2121                              <2> 	
+  2122 00000936 E98C000000          <2> jmp	debug_over
+  2123                              <2> 	;DEBUG==============================
+  2124                              <2> debug:
+  2125 0000093B 60                  <2> pusha
+  2126                              <2> 	Print .debug_text
+  2127 0000093C 60                  <3>  pusha
+  2128 0000093D BA[A6090000]        <3>  mov edx, %1
+  2129 00000942 E816F7FFFF          <3>  call RS232.Print
+  2130 00000947 61                  <3>  popa
+  2131                              <2> 	PrintHex eax, 8
+  2132 00000948 60                  <3>  pusha
+  2133 00000949 89C0                <3>  mov eax, %1
+  2134 0000094B B908000000          <3>  mov ecx, %2
+  2135 00000950 E897F7FFFF          <3>  call RS232.PrintHex
+  2136 00000955 61                  <3>  popa
+  2137                              <2> 	PrintByte ' '
+  2138 00000956 60                  <3>  pusha
+  2139 00000957 B020                <3>  mov al, %1
+  2140 00000959 E812F7FFFF          <3>  call RS232.PrintByte
+  2141 0000095E 61                  <3>  popa
+  2142                              <2> 	PrintHex ebx, 8
+  2143 0000095F 60                  <3>  pusha
+  2144 00000960 89D8                <3>  mov eax, %1
+  2145 00000962 B908000000          <3>  mov ecx, %2
+  2146 00000967 E880F7FFFF          <3>  call RS232.PrintHex
+  2147 0000096C 61                  <3>  popa
+  2148                              <2> 	PrintByte ' '
+  2149 0000096D 60                  <3>  pusha
+  2150 0000096E B020                <3>  mov al, %1
+  2151 00000970 E8FBF6FFFF          <3>  call RS232.PrintByte
+  2152 00000975 61                  <3>  popa
+  2153                              <2> 	PrintHex ecx, 8
+  2154 00000976 60                  <3>  pusha
+  2155 00000977 89C8                <3>  mov eax, %1
+  2156 00000979 B908000000          <3>  mov ecx, %2
+  2157 0000097E E869F7FFFF          <3>  call RS232.PrintHex
+  2158 00000983 61                  <3>  popa
+  2159                              <2> 	PrintByte ' '
+  2160 00000984 60                  <3>  pusha
+  2161 00000985 B020                <3>  mov al, %1
+  2162 00000987 E8E4F6FFFF          <3>  call RS232.PrintByte
+  2163 0000098C 61                  <3>  popa
+  2164                              <2> 	PrintHex edi, 8
+  2165 0000098D 60                  <3>  pusha
+  2166 0000098E 89F8                <3>  mov eax, %1
+  2167 00000990 B908000000          <3>  mov ecx, %2
+  2168 00000995 E852F7FFFF          <3>  call RS232.PrintHex
+  2169 0000099A 61                  <3>  popa
+  2170                              <2> 	PrintByte ' '
+  2171 0000099B 60                  <3>  pusha
+  2172 0000099C B020                <3>  mov al, %1
+  2173 0000099E E8CDF6FFFF          <3>  call RS232.PrintByte
+  2174 000009A3 61                  <3>  popa
+  2175                              <2> 
+  2176 000009A4 61                  <2> popa	
+  2177                              <2> 
+  2178 000009A5 C3                  <2> ret
+  2179 000009A6 0A6561782020202020- <2> .debug_text:	db 10,'eax      ebx      ecx      edi',10,0
+  2180 000009AF 206562782020202020- <2>
+  2181 000009B8 206563782020202020- <2>
+  2182 000009C1 206564690A00        <2>
+  2183                              <2> 
+  2184                              <2> ;END DEBUG=========================
+  2185                              <2> debug_over:
+  2186                              <1> 		; ebx = linear address of free memory
+  2187                              <1> 	;one page is reserved for Free Linear memory
+  2188                              <1> 		
+  2189                              <1> 	;Free Linear
+  2190                              <1> 		; ebx = linear address of free memory
+  2191                              <1> 	Print debb
+  2192 000009C7 60                  <2>  pusha
+  2193 000009C8 BA[AD040000]        <2>  mov edx, %1
+  2194 000009CD E88BF6FFFF          <2>  call RS232.Print
+  2195 000009D2 61                  <2>  popa
+  2196                              <1> 		%include 'mem_FLM.asm'
+  2197                              <2> ;Free Linear Memory - FLM
+  2198                              <2> 	; ebx = linear address of free memory
+  2199                              <2> 	new_Page	lin_FLM
+  2200 000009D3 50                  <3>  push eax
+  2201 000009D4 E80FFAFFFF          <3>  call check_edi
+  2202 000009D9 58                  <3>  pop eax
+  2203 000009DA 60                  <3>  pusha
+  2204 000009DB B813040000          <3>  mov eax, %1
+  2205 000009E0 C1E00C              <3>  shl eax, 12
+  2206 000009E3 E81DFBFFFF          <3>  call PD_add_Page
+  2207 000009E8 61                  <3>  popa
+  2208                              <2> 	
+  2209 000009E9 B900040000          <2> 	mov	ecx, pages/4
+  2210 000009EE 89D8                <2> 	mov	eax, ebx		; ebx = linear address of free memory
+  2211 000009F0 0500100000          <2> 	add	eax, pages	; include this page
+  2212                              <2> 	put
+  2213 000009F5 AB                  <3>  stosd
+  2214 000009F6 49                  <3>  dec ecx
+  2215 000009F7 B80000A000          <2> 	mov	eax, lin_Mod_Data * pages
+  2216                              <2> 	put
+  2217 000009FC AB                  <3>  stosd
+  2218 000009FD 49                  <3>  dec ecx
+  2219 000009FE A1FC01A000          <2> 	mov	eax, [lin_Mod_Data * pages + Loader_init.data_end]	;size of segment
+  2220 00000A03 050000A000          <2> 	add	eax, lin_Mod_Data * pages	;eax = next free lin.page
+  2221                              <2> 	put
+  2222 00000A08 AB                  <3>  stosd
+  2223 00000A09 49                  <3>  dec ecx
+  2224 00000A0A B800F0FFFF          <2> 	mov	eax, 0FFFFF000h
+  2225                              <2> 	put
+  2226 00000A0F AB                  <3>  stosd
+  2227 00000A10 49                  <3>  dec ecx
+  2228                              <2> 	pt_fill   0
+  2229 00000A11 B800000000          <3>  mov eax, %1
+  2230 00000A16 F3AB                <3>  rep stosd
+  2231                              <2> 
+  2232                              <2> 
+  2233                              <1> 
+  2234 00000A18 5A                  <1> pop	edx	;edx = physical address for PT1
+  2235                              <1> 
+  2236                              <1> 	;Temp PD and PT1
+  2237                              <1> 	Print debc
+  2238 00000A19 60                  <2>  pusha
+  2239 00000A1A BA[B8040000]        <2>  mov edx, %1
+  2240 00000A1F E839F6FFFF          <2>  call RS232.Print
+  2241 00000A24 61                  <2>  popa
+  2242                              <1> 		%include 'Temp_PD.asm'
+  2243                              <2> ;Setup Temporary PageDirectory
+  2244                              <2> Temp:
+  2245 00000A25 52                  <2> 	push	edx	;PT1 address
+  2246 00000A26 E8BDF9FFFF          <2> 		call	check_edi
+  2247 00000A2B 58                  <2> 	pop	eax
+  2248                              <2> 	
+  2249 00000A2C 57                  <2> 	push	edi
+  2250 00000A2D 81C704000000        <2> 		add	edi, 4
+  2251 00000A33 0503000000          <2> 		add	eax, 3
+  2252 00000A38 AB                  <2> 		stosd
+  2253 00000A39 B9FE030000          <2> 		mov	ecx, pages/4 - 2
+  2254                              <2> 		pt_fill 0
+  2255 00000A3E B800000000          <3>  mov eax, %1
+  2256 00000A43 F3AB                <3>  rep stosd
+  2257                              <2> 
+  2258                              <2> ;Temporary PT0
+  2259 00000A45 E89EF9FFFF          <2> 		call	check_edi
+  2260 00000A4A 5A                  <2> 	pop	edx
+  2261 00000A4B 52                  <2> 	push	edx
+  2262 00000A4C 89F8                <2> 		mov	eax, edi
+  2263 00000A4E 0503000000          <2> 		add	eax, 3
+  2264 00000A53 8902                <2> 		mov	[edx], eax
+  2265                              <2> 
+  2266                              <2> 		;memory area where the processor stores the previous Task state when TR = 0
+  2267 00000A55 57                  <2> 		push	edi
+  2268 00000A56 81C700100000        <2> 			add	edi, pages
+  2269 00000A5C E887F9FFFF          <2> 			call	check_edi
+  2270 00000A61 89F8                <2> 			mov	eax, edi
+  2271 00000A63 5F                  <2> 		pop	edi
+  2272 00000A64 0503000000          <2> 		add	eax, 3
+  2273 00000A69 8907                <2> 		mov	[edi], eax
+  2274                              <2> 
+  2275                              <2> 		;running code
+  2276 00000A6B 81C780000000        <2> 		add  edi, (mem >> 12) * 4
+  2277 00000A71 B9[00000000]        <2> 		mov	ecx, Loader_Size
+  2278 00000A76 B803000200          <2> 		mov  eax, (mem & 0FFFFF000h)+3
+  2279                              <2> 		.loop:
+  2280 00000A7B AB                  <2> 		stosd
+  2281 00000A7C 0500100000          <2> 		add	eax, pages
+  2282 00000A81 E2F8                <2> 		loop	.loop
+  2283                              <2> 		
+  2284 00000A83 5A                  <2> 	pop	edx	;edx = Temp PD address
+  2285                              <1> 		;edx = Temp PD address
+  2286                              <1> 
+  2287                              <1> ;edi is out of sync in Temp_PD.asm
+  2288                              <1> ;Fix it before writing more here
+  2289                              <1> ;else nothing has to be done
+  2290                              <1> ;check_edi
+  2291                              <1> 
+  2292                              <1> ;Done
+  2293                              <1> 
+  2294                              <1> 		;edx = Temp PD address
+  2295                                  	;edx = Temp PD address
+  2296 00000A84 52                      	push	edx
+  2297                                  	
+  2298                                  		Print Starting
+  2299 00000A85 60                  <1>  pusha
+  2300 00000A86 BA[290B0000]        <1>  mov edx, %1
+  2301 00000A8B E8CDF5FFFF          <1>  call RS232.Print
+  2302 00000A90 61                  <1>  popa
+  2303                                  		
+  2304 00000A91 5A                      	pop	edx
+  2305                                  	;edx = Temp PD address
+  2306                                  ;Load PDBR with temporary PD
+  2307 00000A92 0F20D8                  	mov  eax, cr3  ;PDBR
+  2308 00000A95 25FF0F0000              	and  eax, 0FFFh ;keep settings
+  2309 00000A9A 09D0                    	or   eax, edx
+  2310 00000A9C 0F22D8                  	mov  cr3, eax
+  2311                                  
+  2312                                  ;Enable Paging
+  2313 00000A9F 0F20C0                  	mov  eax, cr0
+  2314 00000AA2 0D00000080              	or   eax, 80000000h ;PG set
+  2315 00000AA7 0F22C0                  	mov  cr0, eax
+  2316                                  
+  2317                                  ;Load Nanos GDT, IDT
+  2318                                  
+  2319                                  	;IDT
+  2320 00000AAA BB[C10A0000]            	mov  ebx, nanos_idtr
+  2321 00000AAF 0F011B                  	lidt [ebx]	;remake
+  2322                                  
+  2323                                  	;GDT
+  2324 00000AB2 BB[C70A0000]            	mov  ebx, nanos_gdtr
+  2325 00000AB7 0F0113                  	lgdt [ebx]	;remake
+  2326                                  
+  2327 00000ABA EA000000003800          	jmp  Mod_TSS_sel: 00000000h		;Bochs loads the new settings, Intel saves current state before
+  2328                                  
+  2329                                  
+  2330                                  ;Nanos table registers
+  2331                                  	;IDT reg
+  2332 00000AC1 FF07                    nanos_idtr:	dw 100h*8-1  		; IDT Limit = 256 descriptors
+  2333 00000AC3 00104000                	.base:	dd lin_IDT * pages	; IDT Base
+  2334                                  
+  2335                                  	;GDT reg
+  2336 00000AC7 FF0F                    nanos_gdtr:	dw 1000h-1		; GDT Limit = 1page
+  2337 00000AC9 00304000                	.base:	dd lin_GDT * pages	; GDT Base
+  2338                                  
+  2339                                  
+  2340                                  
+  2341 00000ACD 496E6974696174696E-     Welcome	db 'Initiating Nanos ver 0.04 by Peter Hultqvist',10,'http://www.neocoder.net/nanos/',10,0
+  2342 00000AD6 67204E616E6F732076-
+  2343 00000ADF 657220302E30342062-
+  2344 00000AE8 792050657465722048-
+  2345 00000AF1 756C7471766973740A-
+  2346 00000AFA 687474703A2F2F7777-
+  2347 00000B03 772E6E656F636F6465-
+  2348 00000B0C 722E6E65742F6E616E-
+  2349 00000B15 6F732F0A00         
+  2350 00000B1A 436F756E74696E6720-     RAMSize	db 'Counting RAM: ',0
+  2351 00000B23 52414D3A2000       
+  2352 00000B29 0A0A20202020205374-     Starting	db 10,10,'     Starting Nanos...',0
+  2353 00000B32 617274696E67204E61-
+  2354 00000B3B 6E6F732E2E2E00     
+  2355                                  sok:	;start of kernel
+  2356                                  
