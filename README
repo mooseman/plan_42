@@ -1,7 +1,7 @@
 
  *****  README  ***** 
 
- A start is about to be made on Plan 42 - a small public-domain 
+ A start has been made on Plan 42 - a small public-domain 
 operating system.
 
 The first priority is to get a small, simple kernel to boot.  
@@ -14,20 +14,13 @@ basics of booting, kernels and operating systems.
 At that point, it should be possible to start customising 
 the kernel to become more "Plan 9-like".  
 
-*** Update - 29th Oct 2010 *** 
-I've just found two public-domain operating systems - 
-SNAFU and Djehuty. 
-Snafu is written in assembly language, and Djehuty in D!  
- 
-Snafu home page - 
-http://home.swipnet.se/smaffy/snafu/ 
-
-Djehuty home page - 
-http://github.com/wilkie/djehuty 
-
-Both of these should be excellent resources and very 
-useful for the development of plan42! Many thanks to 
-these developers!  
+*** Update - 7th Jan 2011 *** 
+I've added code for the BIOS parameter block and am 
+about to start on the stage 2 bootloader.  
+I'm also considering whether to write the kernel in C or 
+in the public-domain assembly language HLA.  
+HLA has a very comprehensive set of libraries, so it has 
+a lot going for it.  The syntax is also easy to understand. 
  
 - mooseman 
 
