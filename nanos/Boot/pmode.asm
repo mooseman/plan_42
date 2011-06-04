@@ -2,7 +2,7 @@
 	;Initiate Pmode
 	;bx = seg pointer at nanos.dat
 
-	%include 'a20.asm'
+	%include 'A20.ASM'
 
 	lgdt [gdtr]	;points at ds:gdtr	 ;A temporary GDT for initiation
 

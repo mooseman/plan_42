@@ -1,7 +1,14 @@
 
-;  "Hello world" boot loader by Daniel Faulkner 
-;   Acknowledgements - Many thanks to Daniel on the osdever forum  
-;   and to Mike (of brokenthorn.com).  
+;   Plan 42 boot loader.  
+;   Acknowledgements - Very many thanks to Daniel Faulkner on the 
+;   osdever forum, and to Mike (of brokenthorn.com). 
+;   The bootloader of this OS has code from both Daniel and from 
+;   Mike's **outstanding** OS development tutorial series. 
+;   Mike has very generously released the code in those tutorials to 
+;   the public domain. This OS would not have been possible without 
+;   the use of that excellent resource!  
+
+;   This code is released to the public domain.    
 
 ;   Compile this code using this command - 
 ;   nasm -f bin plan42_boot.asm -o plan42_boot.bin
