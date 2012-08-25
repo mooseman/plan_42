@@ -1,18 +1,6 @@
 Nanos ver 0.004	Created by Peter Hultqvist, peter.hultqvist@neocoder.net
 Release date 2003-12-02
-http://www.neocoder.net/nanos/
-
-This is a working Loader + Nanos Kernel which will load the files
-specified in nanos.dat into memory.
-There is however no UI at the moment
-
-Please send comments and questions to: nanos@neocoder.net
-
-Help is needed:
-If you want to help witing drivers or applications for nanos you are welcome.
-Just contact me and I will help you.
-
-	Peter Hultqvist, peter.hultqvist@neocoder.net
+http://silentorbit.com/nanos/
 
 
 =====================================================================

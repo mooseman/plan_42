@@ -1,5 +1,5 @@
 
- *****  README  ***** 
+*****  README  ***** 
 
  A start has been made on Plan 42 - a small public-domain 
 operating system.
@@ -14,13 +14,15 @@ basics of booting, kernels and operating systems.
 At that point, it should be possible to start customising 
 the kernel to become more "Plan 9-like".  
 
-*** Update - 7th Jan 2011 *** 
-I've added code for the BIOS parameter block and am 
-about to start on the stage 2 bootloader.  
-I'm also considering whether to write the kernel in C or 
-in the public-domain assembly language HLA.  
-HLA has a very comprehensive set of libraries, so it has 
-a lot going for it.  The syntax is also easy to understand. 
+*** STATUS - 25th Aug 2012 *** 
+I'd summarise the status as "going very slowly but not 
+abandoned".  
+
+It is almost certain that further development will use the 
+PD code from the excellent OS development tutorial 
+series on brokenthorn.com here -  
+http://www.brokenthorn.com/Resources/OSDevIndex.html  
  
+
 - mooseman 
 

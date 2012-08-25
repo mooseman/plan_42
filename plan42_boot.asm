@@ -67,7 +67,7 @@ jmp $      ; Never ending loop
 ; Procedures
 PutStr:      ; Procedure label/start
 ; Set up the registers for the interrupt call
-mov ah,0x0E   ; The function to display a chacter (teletype)
+mov ah,0x0E   ; The function to display a character (teletype)
 mov bh,0x00   ; Page number
 mov bl,0x07   ; Normal text attribute
 
@@ -81,7 +81,7 @@ or al,al   ; Sets the zero flag if al = 0
 jz .return   ; If the zero flag has been set go to the end of the procedure.
       ; Zero flag gets set when an instruction returns 0 as the answer.
 int 0x10   ; Run the BIOS video interrupt
-jmp .nextchar   ; Loop back round tothe top
+jmp .nextchar   ; Loop back round to the top
 .return      ; Label at the end to jump to when complete
 ret      ; Return to main program
 
