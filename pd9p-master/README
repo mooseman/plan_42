@@ -1,0 +1,24 @@
+
+NOTE by mooseman - ALL of the pd9p code is by JuEeHa and 
+is from here - 
+https://github.com/JuEeHa/pd9p
+
+A very big thank-you to JuEeHa for writing that code!  
+
+As he says, the code is in the public domain so 
+"share and enjoy....."  :)   
+
+JuEeHa's readme is below -  
+**************************************************
+
+libpd9p.a: 9P library implementing both client and server
+* Handles Tversion/Rversion
+* Does attach on connect
+* open/close/read/write
+
+pd9p: simple 9P client
+* connects to specified addr
+* only command currently is get, fetches an file from remote host
+
+pd9psrv: simple 9P fileserver
+* does not exist

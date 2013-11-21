@@ -14,11 +14,11 @@ basics of booting, kernels and operating systems.
 At that point, it should be possible to start customising 
 the kernel to become more "Plan 9-like".  
 
-*** STATUS - 25th Aug 2012 *** 
+*** STATUS - 21st Nov 2013 *** 
 I'd summarise the status as "going very slowly but not 
 abandoned".  
 
-It is almost certain that further development will use the 
+It is *almost certain* that further development will use the 
 PD code from the excellent OS development tutorial 
 series on brokenthorn.com here -  
 http://www.brokenthorn.com/Resources/OSDevIndex.html  

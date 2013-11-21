@@ -1,0 +1,63 @@
+
+  *** Notes on Plan 9 *** 
+
+ These are a few comments on Plan 9. 
+
+From plan9.ini(8) - 
+"When booting Plan 9 on a PC, the DOS program 9load(8) first
+reads a DOS file containing configuration information from
+the boot disk.  This file, plan9.ini, looks like a shell
+script containing lines of the form
+
+  name=value
+
+each of which defines a kernel or device parameter.
+*********************************
+
+From kbdfs(8) - 
+"Started on boot(8), kbdfs translates raw keyboard scancodes from 
+/dev/scancode (see kbd(3)) and its kbin and kbdin file and optionally 
+reads console input from consfile to provide initial keyboard and console 
+input.
+
+It serves a one-level directory containing the files cons, consctl, kbd, kbdin, 
+kbin and kbmap. 
+
+Console
+
+Reading the cons file returns characters typed on the console. Normally, characters are buffered to enable erase and kill processing. A control-U, ^U, typed at the keyboard erases the current input line (removes all characters from the buffer of characters not yet read via cons), and a backspace erases the previous non-kill, non-erase character from the input buffer.
+
+Keyboard
+
+A read on the kbd file returns the character k, K or c followed by a null terminated, variable-length, UTF encoded string. The k message is send when a key is pressed down and K when a key is released. The following string contains all the keycodes of the keys that are currently pressed down in unshifted form. This includes all keys that have a keyboard mapping and modifier keys. The string following the c message contains the single character that would have been returned on the cons file instead.
+
+Keyboard map ( *** Note by me - Very elegant *** )  
+
+Scancodes are mapped to Unicode characters with a number of translation tables. These tables can be accessed with the kbmap file.
+
+Reads return the current contents of the map. Each entry is one line containing three 11 character numeric fields, each followed by a space: a table number, an index into the table (scan code), and the decimal value of the corresponding Unicode character (0 if none). The table numbers are platform dependent; they typically distinguish between unshifted and shifted keys. The scan code values are hardware dependent and can vary from keyboard to keyboard. 
+
+( Note by me - the table numbers presumably also distinguish between "Alt"-ed and 
+"Ctrl"-ed keys too - maybe there are separate tables for those? 
+Thought - could possibly add the corresponding table entries for a key to get the value 
+used in a "rune".  For example, maybe Ctrl-Alt-K would be Ctrl-K plus Alt-K. )    
+
+Guess of possible table structure -   
+Table 1 - "ordinary" (unshifted) keys.  
+Table 2 - Shifted keys. 
+Table 3 - "Alt"-ed keys. 
+Table 4 - "Ctrl"-ed keys. 
+
+This *very clean* way of dealing with the keyboard is (imo) one of the must-haves in any 
+Plan 9-ish OS. This should be one of the top priorities, along with plan9.ini.  
+
+Other very useful man pages -  
+ctype(2)  isalpharune(2)  graphics(2)  window(2)  namespace(4)  env(3)  
+plan9.ini(8)  vga(8)  vgadb(6)  keyboard(2)  mouse(2)  
+
+
+
+
+
+
+
