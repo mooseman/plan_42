@@ -1,6 +1,18 @@
 
   *** Notes on Plan 9 *** 
 
+A few comments on Plan 42 here too..... 
+
+Priorities ( "is-it-possibles".... )  
+
+* plan42.ini 
+* kbdfs (or at least keyboard using the approach shown 
+in the man pages below).  
+* Namespaces.  
+* vga.  
+
+
+
  These are a few comments on Plan 9. 
 
 From plan9.ini(8) - 
