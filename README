@@ -2,27 +2,41 @@
 *****  README  ***** 
 
  A start has been made on Plan 42 - a small public-domain 
-operating system.
+operating system. 
 
-The first priority is to get a small, simple kernel to boot.  
-Some P.D. code is available to help with this.  After this 
-is done, considerable time will be spent becoming familiar 
-with the code and how it works.  
+ For a long time, I've seen the Plan 9 OS as being almost the 
+ideal operating system - very cleanly and elegantly designed. 
+A number of things in particular appeal to me about Plan 9 - 
 
-The aim is to first get a very good understanding of the 
-basics of booting, kernels and operating systems.  
-At that point, it should be possible to start customising 
-the kernel to become more "Plan 9-like".  
+* Its use of the "everything is a file" approach 
 
-*** STATUS - 21st Nov 2013 *** 
-I'd summarise the status as "going very slowly but not 
-abandoned".  
+* Its use of namespaces throughout the system 
 
-It is *almost certain* that further development will use the 
-PD code from the excellent OS development tutorial 
-series on brokenthorn.com here -  
+* The very clean approach of its keyboard management 
+
+* The very clean design of its graphics, screen and window 
+  management. 
+
+
+With Plan 42, the aim is to get as close as possible to how 
+Plan 9 approaches things. In particular, the keyboard management, the namespaces and the graphics/screen/window areas.  
+
+
+*** STATUS - 11th May 2014 *** 
+Plan 42 is back in (relatively) active development. 
+*Not* fast development by any means, but I'm keen to get into the keyboard management side of things.  
+
+*** Current focus *** 
+* Keyboard (keystroke) management. Scancodes, runes, the scancode-to-Unicode mapping using translation tables.  
+http://man.aiju.de/8/kbdfs 
+
+
+
+*** ACKNOWLEDGEMENT *** 
+Plan 42 is based on the excellent public-domain code from the Brokenthorn OS development tutorial here - 
 http://www.brokenthorn.com/Resources/OSDevIndex.html  
  
+Very many thanks to the team at brokenthorn.com for that outstanding series of articles, and many thanks to them for releasing the code as public-domain!  
 
 - mooseman 
 
