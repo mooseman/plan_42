@@ -1,0 +1,7 @@
+
+ *** Diagram of how keyboard code seems to work *** 
+ *** in Plan 9 *** 
+
+ keystroke -> scancode ->  /dev/scancode 
+
+  

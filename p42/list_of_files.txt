@@ -1,0 +1,31 @@
+
+
+SysCore: debug Fat12 FloppyDisk Hal Include Kernel Keyboard Lib proc 
+
+debug:  Fat12.lib FloppyDisk.lib  Hal.lib  Keyboard.lib Lib.lib 
+Fat12:  Debug  fat12.cpp 
+Fat12/Debug:  
+FloppyDisk:  Debug flpydsk.cpp  flpydsk.h  joco.cpp 
+Hal:  cpu.cpp cpu.h  dma.cpp dma.h  gdt.cpp gdt.h  Hal.cpp Hal.map idt.cpp idt.h 
+      pic.cpp pic.h  pit.cpp pit.h  regs.h  tss.cpp tss.h  user.cpp 
+Include:  bootinfo.h  bpb.h  cctype crtdefs.h  cstdarg cstdint cstring ctype.h  
+      error.h fat12.h  float.h flpydsk.h  fsys.h Hal.h  limits.h _null.h  
+      size_t.h stdarg.h  stdint.h  stdio.h  string.h  va_list.h 
+Kernel:  DebugDisplay.cpp DebugDisplay.h entry.cpp exception.cpp exception.h 
+         fsys.cpp image.h Kernel.map main.cpp mmngr_phys.cpp mmngr_phys.h 
+         mmngr_virtual.cpp mmngr_virtual.h panic.cpp Resource.rc 
+         sysapi.cpp sysapi.h task.cpp task.h vmmngr_pde.cpp vmmngr_pde.h 
+         vmmngr_pte.cpp vmmngr_pte.h    
+Keyboard:  kybrd.cpp kybrd.h 
+Lib:   Crtlib.map cstd.cpp ctype.c stdio.cpp string.cpp 
+proc:  main.cpp 
+
+
+SysBoot:  Stage1 Stage2 
+SysBoot/Stage1:  Boot1.asm  Boot1.bin 
+SysBoot/Stage2:  A20.inc bootinfo.inc BUILD.bat common.inc Fat12.inc Floppy16.inc 
+                 Gdt.inc KRNLDR.SYS Memory.inc Paging.inc Stage2.asm stdio.inc 
+
+
+
+

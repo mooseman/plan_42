@@ -16,6 +16,8 @@
 //    IMPLEMENTATION HEADERS
 //============================================================================
 
+#define ARCH_X86  
+
 #include "cpu.h"
 #include "gdt.h"
 #include "idt.h"

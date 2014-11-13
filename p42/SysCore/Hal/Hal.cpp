@@ -10,6 +10,8 @@
 //**
 //****************************************************************************
 
+#define ARCH_X86 
+
 #ifndef ARCH_X86
 #error "[hal.cpp for i86] requires i86 architecture. Define ARCH_X86"
 #endif

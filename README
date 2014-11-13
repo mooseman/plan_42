@@ -18,18 +18,40 @@ A number of things in particular appeal to me about Plan 9 -
   management. 
 
 
-With Plan 42, the aim is to get as close as possible to how 
-Plan 9 approaches things. In particular, the keyboard management, the namespaces and the graphics/screen/window areas.  
+With Plan 42, the aim is to get close to how Plan 9 approaches things
+in three main areas -  
+*  Keyboard management
+*  The use of namespaces throughout the system 
+*  The graphics/screen/window areas.  
+
+This may eventually extend to including "plumbing" but the above three areas 
+are the main priority at present.  
+
+Plan 42 will differ from Plan 9 in one major respect - 
+Plan 42 will NOT make use of a three-button mouse. 
+I am a big fan of using the keyboard. The hugely mouse-focused approach of 
+the Plan 9 interface will not be part of Plan 42.   
 
 
-*** STATUS - 11th May 2014 *** 
-Plan 42 is back in (relatively) active development. 
-*Not* fast development by any means, but I'm keen to get into the keyboard management side of things.  
+*** STATUS - 13th Nov 2014 *** 
 
+Plan 42 is back in *active* development!  
+ 
 *** Current focus *** 
-* Keyboard (keystroke) management. Scancodes, runes, the scancode-to-Unicode mapping using translation tables.  
-http://man.aiju.de/8/kbdfs 
+Creating makefiles to replace the MS Project files. 
+This is going well. I'm aiming to have these done by about 27th Nov - 
+maybe sooner. 
+If these work (and I think they will, given the very good quality of the 
+Brokenthorn OS Dev tutorial code that plan42 is now based on) then the 
+first working version of plan42 should be out in late November. 
+It'll still be *very* basic - just a command-prompt able to accept maybe 
+several commands and clear the screen, but it'll be a start.  
 
+ 
+*** Next up -  *** 
+Keyboard (keystroke) management. Scancodes.  
+Scancode-to-Unicode mapping using translation tables.  
+http://man.aiju.de/8/kbdfs 
 
 
 *** ACKNOWLEDGEMENT *** 
@@ -39,4 +61,5 @@ http://www.brokenthorn.com/Resources/OSDevIndex.html
 Very many thanks to the team at brokenthorn.com for that outstanding series of articles, and many thanks to them for releasing the code as public-domain!  
 
 - mooseman 
+
 

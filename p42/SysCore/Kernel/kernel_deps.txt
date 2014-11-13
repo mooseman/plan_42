@@ -1,0 +1,25 @@
+
+
+
+andy@obsidian ~/plan_42/p42/SysCore/Kernel $ g++ -MM *.cpp
+DebugDisplay.o: DebugDisplay.cpp
+entry.o: entry.cpp DebugDisplay.h
+exception.o: exception.cpp exception.h
+fsys.o: fsys.cpp
+main.o: main.cpp DebugDisplay.h exception.h mmngr_phys.h mmngr_virtual.h \
+ vmmngr_pte.h vmmngr_pde.h task.h
+mmngr_phys.o: mmngr_phys.cpp mmngr_phys.h
+mmngr_virtual.o: mmngr_virtual.cpp mmngr_virtual.h vmmngr_pte.h \
+ mmngr_phys.h vmmngr_pde.h
+panic.o: panic.cpp DebugDisplay.h
+sysapi.o: sysapi.cpp sysapi.h DebugDisplay.h mmngr_virtual.h vmmngr_pte.h \
+ mmngr_phys.h vmmngr_pde.h task.h
+task.cpp:12:18: fatal error: fsys.h: No such file or directory
+ #include "fsys.h"
+                  ^
+compilation terminated.
+vmmngr_pde.o: vmmngr_pde.cpp vmmngr_pde.h mmngr_phys.h
+vmmngr_pte.o: vmmngr_pte.cpp vmmngr_pte.h mmngr_phys.h
+
+
+
