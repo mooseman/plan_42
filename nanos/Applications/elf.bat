@@ -1,1 +1,0 @@
-ld-elf -s -T elf.ld -o %2 %1
