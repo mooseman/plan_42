@@ -7,6 +7,8 @@
 //**
 //****************************************************************************
 
+#define ARCH_X86  
+
 #ifndef ARCH_X86
 #error "[pic.h] platform not implimented. Define ARCH_X86 for HAL"
 #endif

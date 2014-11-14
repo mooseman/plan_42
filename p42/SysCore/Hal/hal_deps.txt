@@ -1,48 +1,18 @@
 
 
-The fix here is to put #define ARCH_X86 at the top of the offending files.  
+The fix here was to put #define ARCH_X86 at the top of the offending files.  
 
-andy@obsidian ~/plan_42/p42/SysCore/Hal $ g++ -MM *.cpp
+~/plan_42/p42/SysCore/Hal $ g++ -MM *.cpp
 cpu.o: cpu.cpp cpu.h regs.h gdt.h idt.h
 dma.o: dma.cpp dma.h
-In file included from gdt.cpp:15:0:
-gdt.h:17:2: error: #error "[gdt.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[gdt.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
+gdt.o: gdt.cpp gdt.h
 Hal.o: Hal.cpp cpu.h regs.h pic.h pit.h idt.h
-In file included from idt.cpp:14:0:
-idt.h:13:2: error: #error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
- #error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
-  ^
-pic.cpp:10:2: error: #error "[pic.cpp for i86] requires i86 architecture. Define ARCH_X86"
- #error "[pic.cpp for i86] requires i86 architecture. Define ARCH_X86"
-  ^
-In file included from pic.cpp:18:0:
-pic.h:11:2: error: #error "[pic.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[pic.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
-In file included from pit.cpp:12:0:
-idt.h:13:2: error: #error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
- #error "[idt.h for i86] requires i86 architecture. Define ARCH_X86"
-  ^
-In file included from pit.cpp:13:0:
-pit.h:11:2: error: #error "[pit.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[pit.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
-In file included from pit.cpp:14:0:
-pic.h:11:2: error: #error "[pic.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[pic.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
-In file included from tss.cpp:15:0:
-gdt.h:17:2: error: #error "[gdt.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[gdt.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
-In file included from tss.cpp:16:0:
-tss.h:12:2: error: #error "[tss.h] platform not implimented. Define ARCH_X86 for HAL"
- #error "[tss.h] platform not implimented. Define ARCH_X86 for HAL"
-  ^
+idt.o: idt.cpp idt.h
+pic.o: pic.cpp pic.h
+pit.o: pit.cpp idt.h pit.h pic.h
+tss.o: tss.cpp gdt.h tss.h
 user.o: user.cpp
-andy@obsidian ~/plan_42/p42/SysCore/Hal $ 
+
 
  
 

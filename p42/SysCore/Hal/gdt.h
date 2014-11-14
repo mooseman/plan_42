@@ -13,6 +13,8 @@
 //**
 //****************************************************************************
 
+#define ARCH_X86 
+
 #ifndef ARCH_X86
 #error "[gdt.h] platform not implimented. Define ARCH_X86 for HAL"
 #endif
