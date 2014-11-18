@@ -8,12 +8,19 @@ CFLAGS=-c -Wall
 
 LDFLAGS=
 
-VPATH *.cpp SysCore SysCore/Fat12 SysCore/FloppyDisk SysCore/Hal SysCore/Include
-			SysCore/Kernel SysCore/Keyboard SysCore/Lib SysCore/proc
+SUBDIRS =            \
+      SysCore/Fat12      \
+      SysCore/FloppyDisk \
+      SysCore/Hal        \
+      SysCore/Include    \
+      SysCore/Kernel     \
+      SysCore/Keyboard   \
+      SysCore/Lib        \
+      SysCore/proc
 
+VPATH %.cpp $(SUBDIRS)
 
-
-SOURCES=*.cpp 
+SOURCES=%.cpp 
 
 OBJECTS=$(SOURCES:.cpp=.o)
 
@@ -27,7 +34,7 @@ all: $(SOURCES) $(EXECUTABLE)
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
-.cpp.o:
+.cpp .o:
 	$(CC) $(CFLAGS) $< -o $@
 
 #  TO DO - need to do the SysBoot directory and 
