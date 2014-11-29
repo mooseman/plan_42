@@ -1,12 +1,12 @@
 
+#  Plan 42 - Makefile 
+#  Based on the makefile for the Lice compiler which was 
+#  written by Dale Weiler 
 
-#  Plan 42 makefile 
 
-CC=g++
-
-CFLAGS=-c -Wall
-
-LDFLAGS=
+CC      ?= g++
+CFLAGS  += -Wall -Wextra -Wno-missing-field-initializers -O3 -std=c99 
+LDFLAGS +=
 
 SUBDIRS =            \
       SysCore/Fat12      \
@@ -18,26 +18,29 @@ SUBDIRS =            \
       SysCore/Lib        \
       SysCore/proc
 
-VPATH %.cpp $(SUBDIRS)
+VPATH = %.cpp %.c $(SUBDIRS)
 
-SOURCES=%.cpp 
+P42SOURCES = cpu.cpp dma.cpp gdt.cpp hal.cpp idt.cpp pic.cpp pit.cpp tss.cpp user.cpp fat12.cpp flpydsk.cpp joco.cpp entry.cpp exception.cpp fsys.cpp main.cpp mmngr_phys.cpp mmngr_virtual.cpp panic.cpp sysapi.cpp task.cpp vmmngr_pde.cpp vmmngr_pte.cpp kybrd.cpp cstd.cpp ctype.c stdio.cpp string.cpp 
+P42OBJECTS = $(P42SOURCES:.cpp=.o)
+P42DEPENDS  = $(P42SOURCES:.cpp=.d)
+P42BIN      = p42
 
-OBJECTS=$(SOURCES:.cpp=.o)
+all: $(P42BIN) $(TESTBIN)
 
-# Use nasm to generate its Makefile dependencies
-# nasm -M Stage2.asm > Stage2.dep 
+$(P42BIN): $(P42OBJECTS)
+	$(CC) $(LDFLAGS) $(P42OBJECTS) -o $@
 
-EXECUTABLE=plan42
+c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
 
-all: $(SOURCES) $(EXECUTABLE)
-	
-$(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
-
-.cpp .o:
-	$(CC) $(CFLAGS) $< -o $@
-
-#  TO DO - need to do the SysBoot directory and 
-#  set up rules for nasm here 
+clean:
+	rm -f $(P42OBJECTS)
+	rm -f $(TESTOBJECTS)
+	rm -f $(P42DEPENDS)
+	rm -f $(TESTDEPENDS)
+	rm -f $(ARGSDEPENDS)
+	rm -f $(P42BIN)
+	rm -f $(TESTBIN)
+	rm -f $(ARGSBIN)
 
 
