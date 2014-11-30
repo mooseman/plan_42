@@ -33,17 +33,15 @@ I am a big fan of using the keyboard. The hugely mouse-focused approach of
 the Plan 9 interface will not be part of Plan 42.   
 
 
-*** STATUS - 13th Nov 2014 *** 
+*** STATUS - 30th Nov 2014 *** 
 
-Plan 42 is back in *active* development!  
+Plan 42 is in active (slow but steady) development.  
  
 *** Current focus *** 
 Creating makefiles to replace the MS Project files. 
-This is going well. I'm aiming to have these done by about 27th Nov - 
-maybe sooner. 
-If these work (and I think they will, given the very good quality of the 
-Brokenthorn OS Dev tutorial code that plan42 is now based on) then the 
-first working version of plan42 should be out in late November. 
+This is going well. I'm aiming to have these done by the end of Dec 2014. 
+If these work then the first pre-alpha version of plan42 should be out 
+in January 2015 or thereabouts. 
 It'll still be *very* basic - just a command-prompt able to accept maybe 
 several commands and clear the screen, but it'll be a start.  
 
