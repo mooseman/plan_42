@@ -7,10 +7,6 @@
 ==================================================.
 */
 
-// Very MSVC++ dependent. Will try to support different compiliers later.
-#ifndef _MSC_VER
-#error "MOS2 Kernel C++ Runtime requires Microsoft Visual C++ 2005 or later."
-#endif
 
 #include <stdint.h>
 

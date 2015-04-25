@@ -1,0 +1,4 @@
+
+$ gcc -MM SysBoot/Stage1/*.asm SysBoot/Stage2/*.asm SysCore/Fat12/*.cpp SysCore/FloppyDisk/*.cpp SysCore/Hal/*.cpp SysCore/Include/*.h SysCore/Kernel/*.cpp SysCore/Keyboard/*.cpp SysCore/Lib/*.cpp SysCore/Lib/*.c SysCore/proc/*.cpp  > Makefile 
+
+

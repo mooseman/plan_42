@@ -1,5 +1,6 @@
 #ifndef _CRTDEFS_H
 #define _CRTDEFS_H
+#endif
 
 //****************************************************************************
 //**
@@ -22,32 +23,11 @@
 #define CRT_EXPORTS
 #endif
 
-#if defined (_WIN32)
-#if defined ( _MSC_VER )
-
-//MSVC++ specific
 
 #ifndef  ARCH_X86
 #define ARCH_X86
 #endif
 
-#if defined ( BUILD_STATIC )
-#define _CRTIMP
-#else // build dyanimc
-#ifdef CRT_EXPORTS
-#define _CRTIMP __declspec (dllexport)
-#else
-#define _CRTIMP __declspec (dllimport)
-#endif
-#endif
-
-#else //MSVC++
-#error "The Win32 envirement is currently  not supported."
-#endif
-
-#else //WIN32
-#error "Platform not implimented"
-#endif
 
 #undef far
 #undef near
@@ -109,4 +89,4 @@
 //**
 //****************************************************************************
 
-#endif
+
