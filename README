@@ -57,11 +57,6 @@ Keyboard (keystroke) management. Scancodes.
 Scancode-to-Unicode mapping using translation tables.  
 http://man.aiju.de/8/kbdfs 
 
-1st Dec 2014 -  Added the code from the excellent John Burger OS Dev demo 
-and tutorial - http://wiki.osdev.org/JohnBurger:Demo/Overview  
-Many thanks to John for doing that tutorial and for releasing the code 
-as "public domain"!  
-
 
 - mooseman 
 
