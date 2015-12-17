@@ -1,0 +1,16 @@
+
+   ***  Qemu - how to run it now *** 
+
+The command syntax for qemu has changed. There is no longer a 
+"qemu" binary - it is called qemu-system-i386.  
+
+
+# boot from floppy (a) first, switch back to default order after reboot
+qemu-system-i386 -boot once=a -fda floppy.img
+
+
+
+
+
+
+

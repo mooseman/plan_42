@@ -1,8 +1,10 @@
 
+
 *****  README  ***** 
 
  A start has been made on Plan 42 - a small public-domain 
 operating system. 
+
 
 *** ACKNOWLEDGEMENT *** 
 Plan 42 is based on the excellent public-domain code from the Brokenthorn OS development tutorial here - 
@@ -10,54 +12,17 @@ http://www.brokenthorn.com/Resources/OSDevIndex.html
  
 Very many thanks to the team at brokenthorn.com for that outstanding series of articles, and many thanks to them for releasing the code as public-domain!  
 
- For a long time, I've seen the Plan 9 OS as being almost the 
-ideal operating system - very cleanly and elegantly designed. 
-A number of things in particular appeal to me about Plan 9 - 
-
-* Its use of the "everything is a file" approach 
-
-* Its use of namespaces throughout the system 
-
-* The very clean approach of its keyboard management 
-
-* The very clean design of its graphics, screen and window 
-  management. 
 
 
-With Plan 42, the aim is to get close to how Plan 9 approaches things
-in three main areas -  
-*  Keyboard management
-*  The use of namespaces throughout the system 
-*  The graphics/screen/window areas.  
+*** STATUS - 18th Dec 2015 *** 
 
-This may eventually extend to including "plumbing" but the above three areas 
-are the main priority at present.  
+Plan 42 is still in active (slow but steady) development.  
 
-Plan 42 will differ from Plan 9 in one major respect - 
-Plan 42 will NOT make use of a three-button mouse. 
-I am a big fan of using the keyboard. The hugely mouse-focused approach of 
-the Plan 9 interface will not be part of Plan 42.   
-
-
-*** STATUS - 30th Nov 2014 *** 
-
-Plan 42 is in active (slow but steady) development.  
- 
-*** Current focus *** 
-Creating makefiles to replace the MS Project files. 
-This is going well. I'm aiming to have these done by the end of Dec 2014. 
-If these work then the first pre-alpha version of plan42 should be out 
-in January 2015 or thereabouts. 
-It'll still be *very* basic - just a command-prompt able to accept maybe 
-several commands and clear the screen, but it'll be a start.  
-
- 
-*** Next up -  *** 
-Keyboard (keystroke) management. Scancodes.  
-Scancode-to-Unicode mapping using translation tables.  
-http://man.aiju.de/8/kbdfs 
+I've now done makefiles for Stage1 and Stage2 of Demo 1 of the 
+Brokenthorn series. These makefiles do seem to work but the 
+resulting disk image does *not* yet boot. I'm looking at how 
+to fix this.  
 
 
 - mooseman 
-
 
