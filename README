@@ -14,15 +14,20 @@ Very many thanks to the team at brokenthorn.com for that outstanding series of a
 
 
 
-*** STATUS - 18th Dec 2015 *** 
+*** STATUS - 20th Dec 2015 *** 
 
 Plan 42 is still in active (slow but steady) development.  
 
 I've now done makefiles for Stage1 and Stage2 of Demo 1 of the 
-Brokenthorn series. These makefiles do seem to work but the 
-resulting disk image does *not* yet boot. I'm looking at how 
-to fix this.  
+Brokenthorn series. 
+Both makefiles (Stage 1 and Stage 2) now give floppy images 
+that *do* boot. Qemu gives the "booting from floppy" message for 
+both.  
 
+Stage 1 and Stage 2 directories also have a "makefile2" in them. 
+(This is for my own reference really). That makefile works for 
+me as well as the other one does. 
 
 - mooseman 
+
 
