@@ -2,32 +2,26 @@
 
 *****  README  ***** 
 
- A start has been made on Plan 42 - a small public-domain 
-operating system. 
 
 
-*** ACKNOWLEDGEMENT *** 
-Plan 42 is based on the excellent public-domain code from the Brokenthorn OS development tutorial here - 
-http://www.brokenthorn.com/Resources/OSDevIndex.html  
- 
-Very many thanks to the team at brokenthorn.com for that outstanding series of articles, and many thanks to them for releasing the code as public-domain!  
+*** STATUS - 8th Jan 2016 *** 
+
+Plan 42 is dead.  
 
 
+I now realise that I "bit off more than I could chew" when 
+getting into OS development.  
 
-*** STATUS - 20th Dec 2015 *** 
+It would have been good to have been able to have a small 
+public-domain OS that had some similarities with Plan 9. 
+The 9p protocol, the way that Plan 9 handles keyboards - 
+there are lots of things that Plan 9 does really well.  
 
-Plan 42 is still in active (slow but steady) development.  
+For now, the repo will stay up but this is unlikely to be
+the case for long. 
 
-I've now done makefiles for Stage1 and Stage2 of Demo 1 of the 
-Brokenthorn series. 
-Both makefiles (Stage 1 and Stage 2) now give floppy images 
-that *do* boot. Qemu gives the "booting from floppy" message for 
-both.  
-
-Stage 1 and Stage 2 directories also have a "makefile2" in them. 
-(This is for my own reference really). That makefile works for 
-me as well as the other one does. 
 
 - mooseman 
+
 
 

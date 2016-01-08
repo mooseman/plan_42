@@ -6,12 +6,16 @@
 
 all:
 
-	nasm -f bin stage2.asm -o krnldr.sys
+	nasm -f bin stage2.asm -o KRNLDR.SYS
 
 	cp ~/plan_42/Demo1/Stage1/floppy.img .
 	
-	dd if=krnldr.sys of=floppy.img conv=notrunc iflag=count_bytes \
-	oflag=append,seek_bytes seek=451 count=65
+	dd if=KRNLDR.SYS of=floppy.img conv=notrunc 
+	
+	
+
+
+
 
 
 
