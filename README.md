@@ -6,7 +6,7 @@ After being left for many years, I've decided to revive Plan 42 using the
 same base as Sea-DOS.  '
 
 This project, forked from uefi-dev, aims to create a public-domain 64-bit 
-Plan 8-like OS. 
+Plan 9-like OS. 
 
 Status (as at 4th May 2025) - Builds (for me) but boot still drops to UEFI shell. 
 
