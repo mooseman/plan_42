@@ -1,7 +1,0 @@
-
-
-andy@obsidian ~/plan_42/p42/SysCore/Fat12 $ g++ -MM *.cpp
-fat12.o: fat12.cpp
-andy@obsidian ~/plan_42/p42/SysCore/Fat12 $ 
-
-

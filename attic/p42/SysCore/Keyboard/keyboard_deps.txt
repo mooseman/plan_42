@@ -1,7 +1,0 @@
-
-
-andy@obsidian ~/plan_42/p42/SysCore/Keyboard $ g++ -MM *.cpp
-kybrd.o: kybrd.cpp kybrd.h
-andy@obsidian ~/plan_42/p42/SysCore/Keyboard $ 
-
-

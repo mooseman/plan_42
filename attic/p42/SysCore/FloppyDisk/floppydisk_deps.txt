@@ -1,8 +1,0 @@
-
-
-andy@obsidian ~/plan_42/p42/SysCore/FloppyDisk $ g++ -MM *.cpp
-flpydsk.o: flpydsk.cpp flpydsk.h
-joco.o: joco.cpp flpydsk.h
-andy@obsidian ~/plan_42/p42/SysCore/FloppyDisk $ 
-
-

@@ -1,7 +1,0 @@
-// cerrno standard header
-
-#ifndef _CSTDARG_
-#define _CSTDARG_
-#include <stdarg.h>
-
-#endif /* _CSTDARG_ */

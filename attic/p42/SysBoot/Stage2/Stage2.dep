@@ -1,3 +1,0 @@
-: Stage2.asm stdio.inc Gdt.inc A20.inc Fat12.inc Floppy16.inc \
-  Common.inc bootinfo.inc memory.inc Paging.inc
-

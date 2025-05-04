@@ -1,7 +1,0 @@
-
-
-andy@obsidian ~/plan_42/p42/SysCore/proc $ g++ -MM *.cpp
-main.o: main.cpp
-andy@obsidian ~/plan_42/p42/SysCore/proc $ 
-
-
